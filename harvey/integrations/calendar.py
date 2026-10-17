@@ -19,6 +19,8 @@ logger = logging.getLogger("harvey.calendar")
 API = "https://www.googleapis.com/calendar/v3"
 WEEKDAYS_PT = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
 WEEKDAYS_EN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+WEEKDAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+WEEKDAYS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
 
 def _tz(name: str):
@@ -67,6 +69,14 @@ def free_slots(busy: list[tuple[datetime, datetime]], *, start: datetime, days: 
 def format_slots(slots: list[datetime], language: str = "pt-BR") -> str:
     if not slots:
         return ""
+    if language.startswith("es"):
+        parts = [f"el {WEEKDAYS_ES[s.weekday()]} {s.day:02d}/{s.month:02d} a las "
+                 f"{s.hour}:{s.minute:02d} ({s.tzname()})" for s in slots]
+        return ", ".join(parts[:-1]) + (" o " if len(parts) > 1 else "") + parts[-1]
+    if language.startswith("fr"):
+        parts = [f"{WEEKDAYS_FR[s.weekday()]} {s.day:02d}/{s.month:02d} à "
+                 f"{s.hour}h{s.minute:02d} ({s.tzname()})" for s in slots]
+        return ", ".join(parts[:-1]) + (" ou " if len(parts) > 1 else "") + parts[-1]
     if language.startswith("pt"):
         parts = [f"{WEEKDAYS_PT[s.weekday()]} ({s.day:02d}/{s.month:02d}) às "
                  f"{s.hour}h{s.minute:02d}".replace("h00", "h") for s in slots]
@@ -114,7 +124,7 @@ class CalendarClient:
                 "grant_type": "refresh_token",
             })
         if resp.status_code != 200:
-            logger.warning(f"calendar: token refresh failed ({resp.status_code})")
+            logger.warning(f"agenda: a renovação do token falhou ({resp.status_code})")
             return ""
         data = resp.json()
         self._token = data.get("access_token", "")
@@ -142,11 +152,11 @@ class CalendarClient:
                           "items": [{"id": cfg.calendar_id}]},
                 )
         except httpx.HTTPError as e:
-            logger.warning(f"calendar: freeBusy failed: {e}")
+            logger.warning(f"agenda: a consulta de horários falhou: {e}")
             return []
         if resp.status_code >= 400:
-            logger.warning(f"calendar: freeBusy {resp.status_code}: {resp.text[:200]} "
-                           "(Calendar API enabled? Re-run 'mariana gmail auth'.)")
+            logger.warning(f"agenda: consulta de horários {resp.status_code}: {resp.text[:200]} "
+                           "(a Calendar API está ativada? Rode 'mariana gmail auth' de novo.)")
             return []
         cal = (resp.json().get("calendars") or {}).get(cfg.calendar_id, {})
         busy = [(datetime.fromisoformat(b["start"].replace("Z", "+00:00")),
@@ -160,7 +170,7 @@ class CalendarClient:
     async def book_meeting(self, prospect_email: str, slot: dict) -> bool:
         """Create the event: slot = {"start": iso, "summary": str, "description": str}."""
         if not prospect_email or not isinstance(slot, dict) or not slot.get("start"):
-            logger.warning("book_meeting called with invalid arguments.")
+            logger.warning("book_meeting chamado com dados inválidos.")
             return False
         if not self.is_configured() or not self.cfg.create_events:
             return False
@@ -184,6 +194,6 @@ class CalendarClient:
                 headers={"Authorization": f"Bearer {token}"}, json=body,
             )
         if resp.status_code >= 400:
-            logger.warning(f"calendar: event create {resp.status_code}: {resp.text[:200]}")
+            logger.warning(f"agenda: criação do evento {resp.status_code}: {resp.text[:200]}")
             return False
         return True

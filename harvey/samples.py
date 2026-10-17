@@ -107,7 +107,7 @@ async def sample_ready(state, brain, config, prospect_id: str, link: str) -> str
     if not prospect:
         raise ValueError("prospect not found")
     mk = await market.for_prospect(state, prospect, getattr(config.persona, "language", "pt-BR"))
-    lang = "Brazilian Portuguese" if mk == market.BR else "American English"
+    lang = market.language_name(mk)
     choice = await ChannelsAgent(brain, state, config).choose(prospect)
     channel = choice[0] if choice else "email"
     prompt = f"""Write a short {channel} message, first person, in {lang}, from an
@@ -134,7 +134,7 @@ Return ONLY the message."""
     elif prospect.email:
         await state.add_outbox_item(
             prospect_id=prospect.id, to_email=prospect.email,
-            subject="fiz uma coisa pra vocês" if mk == market.BR else "made something for you",
+            subject=market.pick(mk, pt="fiz uma coisa pra vocês", es="hice algo para ustedes", fr="j'ai fait quelque chose pour vous", en="made something for you"),
             body=body, kind="sample", status="pending_review",
             send_at=datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
         )

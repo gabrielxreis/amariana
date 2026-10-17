@@ -21,7 +21,7 @@ class Analyst:
 
     async def run(self):
         """Generate analytics report from current pipeline data."""
-        logger.info("Analyst: Running performance analysis...")
+        logger.info("Analyst: analisando o desempenho...")
 
         report = {
             "generated_at": datetime.utcnow().isoformat(),
@@ -44,9 +44,9 @@ class Analyst:
             with open(tmp_path, "w") as f:
                 json.dump(report, f, indent=2)
             tmp_path.replace(report_path)
-            logger.info(f"Analyst: Report written to {report_path}")
+            logger.info(f"Analyst: relatório salvo em {report_path}")
         except OSError as e:
-            logger.error(f"Analyst: Failed to write report: {e}")
+            logger.error(f"Analyst: não deu para salvar o relatório: {e}")
 
         # Log key metrics
         pipeline = report["pipeline"]
@@ -54,13 +54,13 @@ class Analyst:
         if total > 0:
             reply_rate = pipeline.get("replied", 0) / max(pipeline.get("contacted", 0), 1) * 100
             logger.info(
-                f"Analyst: {total} prospects | "
-                f"{pipeline.get('contacted', 0)} contacted | "
-                f"Reply rate: {reply_rate:.1f}%"
+                f"Analyst: {total} leads | "
+                f"{pipeline.get('contacted', 0)} contatados | "
+                f"Taxa de resposta: {reply_rate:.1f}%"
             )
 
         for insight in report["insights"]:
-            logger.info(f"Analyst: Insight — {insight}")
+            logger.info(f"Analyst: aprendizado: {insight}")
 
     async def _pipeline_summary(self) -> dict:
         """Count prospects by status."""
@@ -106,14 +106,14 @@ class Analyst:
             reply_rate = total_replied / total_contacted * 100
             if reply_rate < 5:
                 insights.append(
-                    f"ACTION: Reply rate is low ({reply_rate:.1f}%, benchmark 5-10%). "
-                    "Rewrite email 1 in prompts/writer.md with a sharper observation, "
-                    "and test 2-3 new subject lines via skills/email_frameworks.md."
+                    f"AÇÃO: taxa de resposta baixa ({reply_rate:.1f}%, referência 5% a 10%). "
+                    "Reescreva o email 1 em prompts/writer.md com uma observação mais afiada "
+                    "e teste 2 ou 3 assuntos novos (skills/email_frameworks.md)."
                 )
             elif reply_rate > 15:
                 insights.append(
-                    f"KEEP: Reply rate is strong ({reply_rate:.1f}%). Don't change the "
-                    "current messaging. Scale prospecting to feed it more leads."
+                    f"MANTER: taxa de resposta forte ({reply_rate:.1f}%). Não mude as "
+                    "mensagens. Aumente a prospecção para alimentar com mais leads."
                 )
 
         # Deliverability / reputation warning — the most urgent signal
@@ -121,16 +121,16 @@ class Analyst:
             optout_rate = total_unsubscribes / total_contacted * 100
             if optout_rate > 2:
                 insights.append(
-                    f"URGENT: Opt-out rate is {optout_rate:.1f}% (>2% risks blacklisting). "
-                    "Pause sending, tighten ICP targeting in harvey.yaml, and reduce "
-                    "max_daily_sends until the list quality improves."
+                    f"URGENTE: {optout_rate:.1f}% pediram para sair (acima de 2% arrisca bloqueio). "
+                    "Pause os envios, aperte o perfil de cliente no config e reduza "
+                    "o max_daily_sends até a lista melhorar."
                 )
 
         if total_escalations > 0:
             insights.append(
-                f"HUMAN NEEDED: {total_escalations} conversation(s) escalated (angry/legal). "
-                "Review conversations with status 'needs_human' in the dashboard before "
-                "any further sending to those domains."
+                f"PRECISA DE VOCÊ: {total_escalations} conversa(s) passada(s) para você (irritado/jurídico). "
+                "Revise as conversas com status 'needs_human' no painel antes de "
+                "enviar de novo para esses domínios."
             )
 
         # Objection patterns
@@ -139,17 +139,17 @@ class Analyst:
             objection_pct = total_objections / total_replies * 100
             if objection_pct > 40:
                 insights.append(
-                    f"ACTION: {objection_pct:.0f}% of replies are objections. Add the "
-                    "recurring objections to objection_responses in harvey.yaml and "
-                    "skills/objection_handling.md, or narrow targeting to better-fit accounts."
+                    f"AÇÃO: {objection_pct:.0f}% das respostas são objeções. Coloque as "
+                    "objeções que se repetem em skills/objection_handling.md e "
+                    "skills/audiovisual_offer.md, ou foque em clientes com mais encaixe."
                 )
 
         # Interest conversion
         if total_interested > 0 and total_contacted > 0:
             interest_rate = total_interested / total_contacted * 100
             insights.append(
-                f"Interest rate: {interest_rate:.1f}% of contacted prospects show interest "
-                f"({total_interested} of {total_contacted})."
+                f"Taxa de interesse: {interest_rate:.1f}% dos contatados mostraram interesse "
+                f"({total_interested} de {total_contacted})."
             )
 
         # Campaign comparison — name winner AND loser so the fix is obvious
@@ -159,29 +159,29 @@ class Analyst:
             worst = min(rated, key=lambda c: c.get("reply_rate", 0))
             if best.get("reply_rate", 0) > 0 and best is not worst:
                 insights.append(
-                    f"ACTION: '{best.get('name')}' ({best.get('reply_rate')}% replies) beats "
-                    f"'{worst.get('name')}' ({worst.get('reply_rate', 0)}%). Reuse the winner's "
-                    "angle and subject-line style for the next campaign; pause or rewrite the loser."
+                    f"AÇÃO: '{best.get('name')}' ({best.get('reply_rate')}% de resposta) vence "
+                    f"'{worst.get('name')}' ({worst.get('reply_rate', 0)}%). Repita o ângulo e o "
+                    "estilo de assunto da vencedora; pause ou reescreva a outra."
                 )
 
         # Pipeline bottlenecks
         if stages.get("engaged", 0) > 3 and stages.get("closing", 0) == 0:
             insights.append(
-                "ACTION: Prospects engage but none reach closing. Update prompts/handler.md "
-                "CLOSING guidance to propose specific meeting times earlier (by message 2)."
+                "AÇÃO: os leads conversam, mas ninguém chega ao fechamento. Ajuste em "
+                "prompts/handler.md para propor horários mais cedo (até a 2ª mensagem)."
             )
         if total_queued > 0 and total_contacted == 0:
             insights.append(
-                f"BLOCKED: {total_queued} prospects are queued but nothing has been sent. "
-                "Check the Instantly API key and Sender logs — campaigns may be failing to deploy."
+                f"TRAVADO: {total_queued} leads na fila e nada foi enviado. "
+                "Confira a aprovação na Outbox, o email de envio (mariana email-check) e os registros."
             )
         if total_new < 10 and total_queued == 0:
             insights.append(
-                f"ACTION: Prospect pool is nearly empty ({total_new} new). Scout should run "
-                "next cycle; if it keeps coming up dry, broaden the ICP in harvey.yaml."
+                f"AÇÃO: quase sem leads novos ({total_new}). O Scout roda no próximo ciclo; "
+                "se continuar vazio, amplie o perfil de cliente no config ou rode mariana eventos."
             )
 
         if not insights:
-            insights.append("Not enough data yet. Keep prospecting and sending campaigns.")
+            insights.append("Ainda sem dados suficientes. Continue prospectando e enviando.")
 
         return insights

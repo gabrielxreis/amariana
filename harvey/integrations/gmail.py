@@ -58,7 +58,7 @@ def _load_token() -> dict | None:
             if isinstance(data, dict) and data.get("refresh_token"):
                 return data
     except (OSError, json.JSONDecodeError) as e:
-        logger.warning(f"Could not read Gmail token file: {e}")
+        logger.warning(f"Não deu para ler o token do Gmail: {e}")
     return None
 
 
@@ -90,7 +90,7 @@ class GmailProvider(MailProvider):
             return self._access_token
         stored = _load_token()
         if not stored:
-            logger.error("Gmail: not authorized. Run 'mariana gmail auth'.")
+            logger.error("Gmail: não conectado. Rode 'mariana gmail auth'.")
             return None
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -101,7 +101,7 @@ class GmailProvider(MailProvider):
                     "grant_type": "refresh_token",
                 })
         except httpx.HTTPError as e:
-            logger.error(f"Gmail token refresh failed: {e}")
+            logger.error(f"A renovação do token do Gmail falhou: {e}")
             return None
         if resp.status_code != 200:
             logger.error(
@@ -125,10 +125,10 @@ class GmailProvider(MailProvider):
                     method, f"{API_BASE}{path}", headers=headers, **kwargs
                 )
         except httpx.HTTPError as e:
-            logger.error(f"Gmail request failed ({path}): {e}")
+            logger.error(f"O pedido ao Gmail falhou ({path}): {e}")
             return None
         if resp.status_code >= 400:
-            logger.error(f"Gmail API {resp.status_code} on {path}: {resp.text[:200]}")
+            logger.error(f"API do Gmail {resp.status_code} em {path}: {resp.text[:200]}")
             return None
         try:
             return resp.json()
@@ -291,8 +291,8 @@ def run_auth_flow(client_id: str, client_secret: str) -> bool:
     import urllib.parse
 
     if not client_id or not client_secret:
-        print("  Set GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET in .env first.")
-        print("  (Google Cloud Console → APIs → Credentials → OAuth client, Desktop app)")
+        print("  Coloque GMAIL_CLIENT_ID e GMAIL_CLIENT_SECRET no .env antes.")
+        print("  (Google Cloud Console → APIs → Credenciais → ID do cliente OAuth, App para computador)")
         return False
 
     state = secrets.token_urlsafe(16)
@@ -332,16 +332,16 @@ def run_auth_flow(client_id: str, client_secret: str) -> bool:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    print(f"\n  Opening browser for Google sign-in...\n  {auth_url}\n")
+    print(f"\n  Abrindo o navegador para entrar no Google...\n  {auth_url}\n")
     webbrowser.open(auth_url)
     if not done.wait(timeout=300):
         server.shutdown()
-        print("  Timed out waiting for the browser round-trip.")
+        print("  O navegador não voltou a tempo. Tente de novo.")
         return False
     server.shutdown()
 
     if result.get("error") or not result.get("code"):
-        print(f"  Authorization failed: {result.get('error') or 'no code returned'}")
+        print(f"  A autorização falhou: {result.get('error') or 'nenhum código recebido'}")
         return False
 
     resp = httpx.post(TOKEN_URL, data={
@@ -352,17 +352,17 @@ def run_auth_flow(client_id: str, client_secret: str) -> bool:
         "redirect_uri": redirect_uri,
     }, timeout=30)
     if resp.status_code != 200:
-        print(f"  Token exchange failed ({resp.status_code}): {resp.text[:200]}")
+        print(f"  A troca do token falhou ({resp.status_code}): {resp.text[:200]}")
         return False
     data = resp.json()
     if not data.get("refresh_token"):
-        print("  Google returned no refresh token. Remove Mariana from your"
-              " account's third-party access list and retry.")
+        print("  O Google não devolveu o token de renovação. Tire a Mariana da lista"
+              " de apps com acesso à sua conta e tente de novo.")
         return False
     _save_token({
         "refresh_token": data["refresh_token"],
         "scope": data.get("scope", SCOPE),
         "obtained_at": int(time.time()),
     })
-    print(f"  ✓ Gmail authorized. Token stored at {TOKEN_FILE}")
+    print(f"  ✓ Gmail conectado. Token salvo em {TOKEN_FILE}")
     return True

@@ -44,7 +44,7 @@ REGRAS ANTI-SPAM (essas palavras mandam o email pro lixo). NUNCA use:
 - Nunca anexe nem prometa um vídeo no email 1. O link do portfólio está na assinatura, que entra sozinha. NÃO escreva assinatura, nome de despedida, telefone ou links.
 
 IDIOMA:
-- Escreva no idioma indicado para este lote: português do Brasil para o Brasil, inglês americano para o exterior. Todas as regras acima valem nos dois idiomas.
+- Escreva no idioma indicado para este lote, que é o idioma do país onde a empresa está (português do Brasil, espanhol, inglês, francês...). Todas as regras acima valem em qualquer idioma, inclusive as frases proibidas traduzidas.
 - Em português: "Oi {{first_name}}," ou sem saudação, nunca "Prezado". Frases curtas. Nada de tom de carta formal.
 
 PERSONALIZAÇÃO (contato genérico é spam):

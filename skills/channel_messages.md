@@ -2,7 +2,7 @@
 
 ## Qual canal, por mercado
 - **Brasil:** email + WhatsApp. É no WhatsApp que as empresas brasileiras conversam de verdade; uma mensagem curta e humana de um filmmaker é normal lá.
-- **EUA e resto do mundo:** email + LinkedIn. WhatsApp frio de um número estrangeiro desconhecido parece spam lá fora. No LinkedIn, contato comercial é esperado.
+- **Resto do mundo:** email + LinkedIn, no idioma do país da empresa (espanhol no México e na Espanha, inglês nos EUA, francês na França...). WhatsApp frio de um número estrangeiro desconhecido parece spam lá fora. No LinkedIn, contato comercial é esperado.
 - **DM no Instagram:** para quem tem o Instagram no site, quando o canal principal não está disponível. Funciona melhor com criadores, restaurantes, academias e igrejas.
 
 ## WhatsApp (Brasil)

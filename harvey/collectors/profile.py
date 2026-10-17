@@ -497,7 +497,7 @@ class ProfileCollector:
             try:
                 obs = await self.profile_company(company["id"], domain)
             except Exception as e:
-                logger.warning(f"profile failed for {domain}: {e}")
+                logger.warning(f"falhou a leitura de {domain}: {e}")
                 await self._mark_checked(company["id"])
                 continue
             # Marked regardless of outcome — an unreachable site still counts
@@ -518,8 +518,8 @@ async def profile_companies(state, companies: list[dict]) -> tuple[int, str]:
     confirmed = await state.confirmed_signal_codes()
     if not confirmed:
         logger.warning(
-            "profile: no signals confirmed yet — confirm signals first "
-            "(nothing is collected until you choose what matters)."
+            "perfil: nenhum sinal confirmado ainda; confirme os sinais antes "
+            "(nada é coletado até você escolher o que importa)."
         )
         return 0, ""
     run_id = await state.start_run("profile", provider="http")

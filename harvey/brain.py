@@ -156,8 +156,8 @@ class Brain:
             await self._mark_available()
         elif not self._status_synced:
             logger.info(
-                f"Codex ready: supported CLI, isolation verified, login and account "
-                f"valid, model {self.model or 'auto'} usable with no tools (no prompt sent).")
+                f"Codex pronto: CLI suportado, isolamento conferido, login e conta "
+                f"válidos, modelo {self.model or 'auto'} usável sem ferramentas (nenhum prompt enviado).")
             # A pause recorded before a restart must not outlive the problem.
             self._status_synced = True
             try:
@@ -190,7 +190,7 @@ class Brain:
         if self._usage_pause_recorded and time.monotonic() >= self._usage_limited_until:
             self._usage_pause_recorded = False
             if not self.unavailable:
-                logger.info(f"{self.provider_label} usage-limit pause is over; resuming.")
+                logger.info(f"{self.provider_label}: a pausa por limite de uso acabou; retomando.")
                 await self._record_status("ok", "")
 
     async def _mark_unavailable(self, error):
@@ -203,7 +203,7 @@ class Brain:
                                       kind=getattr(error, "kind", ""))
 
     async def _mark_available(self):
-        logger.info(f"{self.provider_label} is available again; resuming.")
+        logger.info(f"{self.provider_label} disponível de novo; retomando.")
         self.unavailable = ""
         self._unavailable_fingerprint = None
         await self._record_status("ok", "")
@@ -216,7 +216,7 @@ class Brain:
                 **extra,
             }))
         except Exception as e:
-            logger.warning(f"Failed to record brain status: {e}")
+            logger.warning(f"Não deu para registrar o estado do cérebro: {e}")
 
     async def think(
         self,
@@ -317,13 +317,13 @@ class Brain:
                 if process.returncode != 0:
                     error = stderr.decode(errors="replace").strip()
                     logger.error(
-                        f"Claude exited with code {process.returncode}: {error[:300]}"
+                        f"O Claude saiu com código {process.returncode}: {error[:300]}"
                     )
                     last_error = error
                     if any(p in error.lower() for p in _NON_RETRYABLE_PATTERNS):
                         logger.error(
-                            "Non-retryable Claude error (auth). "
-                            "Run 'claude login' and restart Mariana."
+                            "Erro do Claude sem nova tentativa (login). "
+                            "Rode 'claude login' e ligue a Mariana de novo."
                         )
                         return ""
                     continue  # retry transient failures
@@ -335,19 +335,19 @@ class Brain:
                 try:
                     await self.state.increment_usage()
                 except Exception as e:
-                    logger.warning(f"Failed to record usage counter: {e}")
+                    logger.warning(f"Não deu para registrar o contador de uso: {e}")
                 try:
                     await self._record_usage(payload, agent=agent, task=task,
                                              label=session_id or "")
                 except Exception as e:
-                    logger.warning(f"Failed to record usage event: {e}")
+                    logger.warning(f"Não deu para registrar o uso: {e}")
 
                 logger.debug(f"Brain response: {response[:200]}...")
                 return response
 
             except FileNotFoundError:
                 logger.error(
-                    "Claude CLI not found. Install it: https://claude.com/download"
+                    "Claude CLI não encontrado. Instale em: https://claude.com/download"
                 )
                 return ""  # not retryable
             except asyncio.CancelledError:
@@ -364,8 +364,8 @@ class Brain:
                 continue
 
         logger.error(
-            f"Brain call failed after {max_retries + 1} attempts. "
-            f"Last error: {str(last_error)[:200]}"
+            f"A chamada ao cérebro falhou depois de {max_retries + 1} tentativas. "
+            f"Último erro: {str(last_error)[:200]}"
         )
         return ""
 
@@ -406,9 +406,9 @@ class Brain:
                     return ""
                 last_error = str(e)
                 if e.retryable:
-                    logger.warning(f"Codex call failed: {e}")
+                    logger.warning(f"A chamada ao Codex falhou: {e}")
                     continue
-                logger.error(f"Codex call failed: {e}")
+                logger.error(f"A chamada ao Codex falhou: {e}")
                 if e.kind in _PERSISTENT_CODEX_KINDS:
                     await self._mark_unavailable(e)
                 elif e.kind == "usage_limit":
@@ -421,23 +421,23 @@ class Brain:
                 # Not expected (the adapter reports failures as CodexError);
                 # log only the type, since messages could carry call details.
                 # CancelledError is not an Exception, so shutdown propagates.
-                logger.error(f"Codex call failed unexpectedly ({type(e).__name__}).")
+                logger.error(f"A chamada ao Codex falhou de forma inesperada ({type(e).__name__}).")
                 return ""
 
             try:
                 await self.state.increment_usage(provider="codex")
             except Exception as e:
-                logger.warning(f"Failed to record usage counter: {e}")
+                logger.warning(f"Não deu para registrar o contador de uso: {e}")
             try:
                 await self._record_codex_usage(result, agent=agent, task=task,
                                                label=session_id or "")
             except Exception as e:
-                logger.warning(f"Failed to record usage event: {e}")
+                logger.warning(f"Não deu para registrar o uso: {e}")
             return result.text
 
         logger.error(
-            f"Codex call failed after {max_retries + 1} attempts. "
-            f"Last error: {last_error[:200]}"
+            f"A chamada ao Codex falhou depois de {max_retries + 1} tentativas. "
+            f"Último erro: {last_error[:200]}"
         )
         return ""
 
@@ -550,7 +550,7 @@ class Brain:
             return None
         parsed = self._extract_json(response)
         if parsed is None:
-            logger.error(f"Failed to parse JSON from brain: {response[:200]}")
+            logger.error(f"Não deu para ler o JSON do cérebro: {response[:200]}")
         return parsed
 
     @staticmethod
@@ -584,7 +584,7 @@ class Brain:
         try:
             return await self.state.get_usage_today(provider=self.provider)
         except Exception as e:
-            logger.warning(f"Could not read usage from state: {e}")
+            logger.warning(f"Não deu para ler o uso no banco: {e}")
             return 0.0
 
     async def is_within_budget(
@@ -602,7 +602,7 @@ class Brain:
         if time.monotonic() < self._usage_limited_until:
             # Codex said the plan is out of usage: an unreadable quota must
             # not be mistaken for room to spend.
-            logger.info(f"{self.paused_reason}; waiting for it to reset.")
+            logger.info(f"{self.paused_reason}; esperando renovar.")
             return False
         if max_percent is not None:
             try:
@@ -636,10 +636,10 @@ class Brain:
         try:
             template = prompt_file.read_text()
         except FileNotFoundError:
-            logger.warning(f"Prompt file not found: {prompt_file}")
+            logger.warning(f"Arquivo de prompt não encontrado: {prompt_file}")
             return ""
         except OSError as e:
-            logger.error(f"Could not read prompt file {prompt_file}: {e}")
+            logger.error(f"Não deu para ler o prompt {prompt_file}: {e}")
             return ""
         for key, value in kwargs.items():
             template = template.replace(f"{{{{{key}}}}}", str(value))
@@ -657,10 +657,10 @@ class Brain:
         try:
             return skill_file.read_text()
         except FileNotFoundError:
-            logger.warning(f"Skill file not found: {skill_file}")
+            logger.warning(f"Arquivo de conhecimento não encontrado: {skill_file}")
             return ""
         except OSError as e:
-            logger.error(f"Could not read skill file {skill_file}: {e}")
+            logger.error(f"Não deu para ler o arquivo de conhecimento {skill_file}: {e}")
             return ""
 
     def load_skills_for_agent(self, agent_name: str) -> str:

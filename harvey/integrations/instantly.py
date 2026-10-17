@@ -57,7 +57,7 @@ class InstantlyClient:
     ) -> dict | list | None:
         """Make an authenticated request with retries, backoff, and validation."""
         if not self.api_key:
-            logger.error("Instantly API key is not configured.")
+            logger.error("A chave do Instantly não está configurada.")
             return None
 
         url = f"{BASE_URL}/{endpoint.lstrip('/')}"
@@ -75,12 +75,12 @@ class InstantlyClient:
                         logger.warning(
                             f"Instantly request error ({method} {endpoint}): "
                             f"{self._redact(str(e))}. "
-                            f"Retry {attempt + 1}/{MAX_RETRIES} in {delay:.1f}s."
+                            f"Nova tentativa {attempt + 1}/{MAX_RETRIES} em {delay:.1f}s."
                         )
                         await asyncio.sleep(delay)
                         continue
                     logger.error(
-                        f"Instantly request failed after {MAX_RETRIES} retries "
+                        f"O pedido ao Instantly falhou depois de {MAX_RETRIES} tentativas "
                         f"({method} {endpoint}): {self._redact(str(e))}"
                     )
                     return None
@@ -94,14 +94,14 @@ class InstantlyClient:
                             else f"server error ({response.status_code})"
                         )
                         logger.warning(
-                            f"Instantly {label} on {method} {endpoint}. "
-                            f"Retry {attempt + 1}/{MAX_RETRIES} in {delay:.1f}s."
+                            f"Instantly {label} em {method} {endpoint}. "
+                            f"Nova tentativa {attempt + 1}/{MAX_RETRIES} em {delay:.1f}s."
                         )
                         await asyncio.sleep(delay)
                         continue
                     logger.error(
-                        f"Instantly API error {response.status_code} on "
-                        f"{method} {endpoint} after {MAX_RETRIES} retries: "
+                        f"Erro da API do Instantly {response.status_code} em "
+                        f"{method} {endpoint} depois de {MAX_RETRIES} tentativas: "
                         f"{self._redact(response.text[:500])}"
                     )
                     return None
@@ -109,7 +109,7 @@ class InstantlyClient:
                 if response.status_code >= 400:
                     # Non-retryable client error (400, 401, 403, 404, ...)
                     logger.error(
-                        f"Instantly API error {response.status_code} on "
+                        f"Erro da API do Instantly {response.status_code} em "
                         f"{method} {endpoint}: {self._redact(response.text[:500])}"
                     )
                     return None
@@ -121,15 +121,15 @@ class InstantlyClient:
                     payload = response.json()
                 except ValueError:
                     logger.error(
-                        f"Instantly returned non-JSON response on {method} "
+                        f"O Instantly devolveu resposta que não é JSON em {method} "
                         f"{endpoint}: {self._redact(response.text[:200])}"
                     )
                     return None
 
                 if not isinstance(payload, (dict, list)):
                     logger.error(
-                        f"Instantly returned unexpected JSON type "
-                        f"({type(payload).__name__}) on {method} {endpoint}."
+                        f"O Instantly devolveu um JSON inesperado "
+                        f"({type(payload).__name__}) em {method} {endpoint}."
                     )
                     return None
                 return payload
@@ -235,7 +235,7 @@ class InstantlyClient:
         ]
         """
         if not leads:
-            logger.warning("add_leads called with an empty lead list; skipping.")
+            logger.warning("add_leads chamado sem leads; pulando.")
             return {}
         result = await self._request(
             "POST",

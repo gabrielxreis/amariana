@@ -119,7 +119,7 @@ class Scout:
 
     async def run(self):
         """Main prospecting flow: find leads matching ICP."""
-        logger.info("Scout: Starting prospecting cycle...")
+        logger.info("Scout: começando a prospecção...")
 
         self.skills = self.brain.load_skills_for_agent("scout")
         self._queries_this_cycle = 0
@@ -155,14 +155,14 @@ class Scout:
             try:
                 prospects_found += await strategy()
             except Exception as e:
-                logger.warning(f"Scout: strategy '{name}' failed: {e}")
+                logger.warning(f"Scout: a estratégia '{name}' falhou: {e}")
 
         await self.state.log_action(
             action_type="prospect",
             agent="scout",
             details={"prospects_found": prospects_found},
         )
-        logger.info(f"Scout: Found {prospects_found} new prospects this cycle.")
+        logger.info(f"Scout: {prospects_found} lead(s) novo(s) neste ciclo.")
 
     # ── Prospect dedup helpers ──
 
@@ -308,7 +308,7 @@ class Scout:
         Tries backends in order: Serper API → DuckDuckGo → Bing → Google.
         """
         if self._queries_this_cycle >= MAX_QUERIES_PER_CYCLE:
-            logger.info("Scout: Query limit reached for this cycle. Will continue next cycle.")
+            logger.info("Scout: limite de buscas do ciclo atingido. Continuo no próximo.")
             return []
 
         self._queries_this_cycle += 1
@@ -336,7 +336,7 @@ class Scout:
             if results:
                 return self._dedupe_results(results)
 
-        logger.warning(f"Scout: All search backends failed for: {query[:80]}")
+        logger.warning(f"Scout: todas as buscas falharam para: {query[:80]}")
         return []
 
     @staticmethod
@@ -562,8 +562,8 @@ class Scout:
                 self._remember_prospect(prospect)
                 count += 1
                 logger.info(
-                    f"Scout: Added {prospect.full_name()} ({prospect.title}) "
-                    f"at {prospect.company} [hunter]"
+                    f"Scout: adicionado {prospect.full_name()} ({prospect.title}) "
+                    f"da {prospect.company} [hunter]"
                 )
                 if count >= MAX_PROSPECTS_PER_CYCLE:
                     return count
@@ -597,7 +597,7 @@ class Scout:
         if not companies:
             return 0
 
-        logger.info(f"Scout: Backfilling contacts for {len(companies)} known companies...")
+        logger.info(f"Scout: buscando contatos de {len(companies)} empresa(s) conhecida(s)...")
 
         count = 0
         for company in companies:
@@ -625,8 +625,8 @@ class Scout:
                 await self.state.add_prospect(prospect)
                 count += 1
                 logger.info(
-                    f"Scout: Added {prospect.full_name()} ({prospect.title}) "
-                    f"at {prospect.company} [backfill]"
+                    f"Scout: adicionado {prospect.full_name()} ({prospect.title}) "
+                    f"da {prospect.company} [complemento]"
                 )
                 if count >= MAX_PROSPECTS_PER_CYCLE:
                     return count
@@ -637,7 +637,7 @@ class Scout:
 
     async def _prospect_via_linkedin(self) -> int:
         """Search LinkedIn for ICP-matching profiles."""
-        logger.info("Scout: Searching LinkedIn...")
+        logger.info("Scout: buscando no LinkedIn...")
         linkedin = LinkedInAutomation(
             self.env.linkedin_email, self.env.linkedin_password
         )
@@ -645,7 +645,7 @@ class Scout:
         try:
             await linkedin.start()
             if not await linkedin.login():
-                logger.warning("Scout: LinkedIn login failed. Skipping.")
+                logger.warning("Scout: login no LinkedIn falhou. Pulando.")
                 return 0
 
             count = 0
@@ -717,8 +717,8 @@ class Scout:
                         self._remember_prospect(prospect)
                         count += 1
                         logger.info(
-                            f"Scout: Added prospect {prospect.full_name()} "
-                            f"at {company_name}"
+                            f"Scout: lead adicionado {prospect.full_name()} "
+                            f"da {company_name}"
                         )
                         if count >= MAX_PROSPECTS_PER_CYCLE:
                             return count
@@ -735,7 +735,7 @@ class Scout:
 
     async def _prospect_via_profile_search(self) -> int:
         """Find LinkedIn profiles via web search (any backend)."""
-        logger.info("Scout: Searching for LinkedIn profiles...")
+        logger.info("Scout: procurando perfis no LinkedIn...")
         count = 0
 
         geo = self.config.icp.geography[0] if self.config.icp.geography else ""
@@ -794,7 +794,7 @@ class Scout:
         Python does ALL the searching and scraping. Claude only scores/personalizes
         the contacts that Python already found.
         """
-        logger.info("Scout: Discovering companies...")
+        logger.info("Scout: descobrindo empresas...")
 
         companies = []
         try:
@@ -807,7 +807,7 @@ class Scout:
             logger.debug(f"Directory discovery failed: {e}")
 
         if not companies:
-            logger.info("Scout: No new companies found this cycle.")
+            logger.info("Scout: nenhuma empresa nova neste ciclo.")
             return 0
 
         # Deduplicate by domain (defensive against missing keys).
@@ -821,7 +821,7 @@ class Scout:
             unique.append(c)
         companies = unique[:MAX_COMPANIES_PER_CYCLE]
 
-        logger.info(f"Scout: Found {len(companies)} candidate companies.")
+        logger.info(f"Scout: {len(companies)} empresa(s) candidata(s).")
 
         default_industry = (
             self.config.icp.industries[0] if self.config.icp.industries else ""
@@ -862,7 +862,7 @@ class Scout:
             all_contacts.extend(contacts)
 
         if not all_contacts:
-            logger.info("Scout: No ICP-matching contacts found on team pages.")
+            logger.info("Scout: nenhum contato do perfil nas páginas de equipe.")
             return 0
 
         # Use Claude to score/personalize, with a Python heuristic fallback.
@@ -873,8 +873,8 @@ class Scout:
             await self.state.add_prospect(prospect)
             count += 1
             logger.info(
-                f"Scout: Added {prospect.full_name()} ({prospect.title}) "
-                f"at {prospect.company} [score: {prospect.score}]"
+                f"Scout: adicionado {prospect.full_name()} ({prospect.title}) "
+                f"da {prospect.company} [nota: {prospect.score}]"
             )
             if count >= MAX_PROSPECTS_PER_CYCLE:
                 break
@@ -1154,7 +1154,7 @@ Respond ONLY with the JSON array."""
                 agent="scout", task="score_contacts",
             )
         except Exception as e:
-            logger.warning(f"Scout: Claude scoring errored ({e}); using heuristic scores.")
+            logger.warning(f"Scout: a pontuação pela IA deu erro ({e}); usando a pontuação por regra.")
             result = None
 
         if isinstance(result, list):
@@ -1175,7 +1175,7 @@ Respond ONLY with the JSON array."""
                     if isinstance(note, str):
                         contacts[idx].personalization_notes = note.strip()[:500]
         else:
-            logger.warning("Scout: Claude scoring failed, using heuristic scores.")
+            logger.warning("Scout: a pontuação pela IA falhou; usando a pontuação por regra.")
 
         contacts = [c for c in contacts if c.score >= 30]
         contacts.sort(key=lambda c: c.score, reverse=True)
@@ -1471,7 +1471,7 @@ Respond ONLY with the JSON array."""
         search_term = keywords[0]
         geo = self.config.icp.geography[0] if self.config.icp.geography else ""
 
-        logger.info(f"Scout: Searching job boards for '{search_term}' roles...")
+        logger.info(f"Scout: procurando vagas de '{search_term}'...")
         loop = asyncio.get_event_loop()
 
         def _search():
@@ -1488,7 +1488,7 @@ Respond ONLY with the JSON array."""
                 loop.run_in_executor(None, _search), timeout=120
             )
         except Exception as e:
-            logger.warning(f"Scout: job-board search failed: {e}")
+            logger.warning(f"Scout: busca de vagas falhou: {e}")
             return 0
         if df is None or getattr(df, "empty", True):
             return 0
@@ -1564,7 +1564,7 @@ Respond ONLY with the JSON array."""
             all_contacts.extend(contacts)
 
         if not all_contacts:
-            logger.info("Scout: job-board sweep found no ICP-matching contacts.")
+            logger.info("Scout: a busca de vagas não achou contatos do perfil.")
             return 0
 
         scored = await self._score_contacts(all_contacts)
@@ -1573,8 +1573,8 @@ Respond ONLY with the JSON array."""
             await self.state.add_prospect(prospect)
             count += 1
             logger.info(
-                f"Scout: Added {prospect.full_name()} ({prospect.title}) "
-                f"at {prospect.company} via job-board signal [score: {prospect.score}]"
+                f"Scout: adicionado {prospect.full_name()} ({prospect.title}) "
+                f"da {prospect.company} pelo sinal de vaga [nota: {prospect.score}]"
             )
             if count >= MAX_PROSPECTS_PER_CYCLE:
                 break
@@ -1636,7 +1636,7 @@ Respond ONLY with the JSON array."""
             notes.append("Tech on site: " + ", ".join(tech[:5]))
         note = ". ".join(notes)
         if note:
-            logger.info(f"Scout: signals for {domain} — {note}")
+            logger.info(f"Scout: sinais de {domain}: {note}")
         return note[:400]
 
     _CAREERS_PATHS = ("/careers", "/jobs", "/careers/", "/join-us", "/join",

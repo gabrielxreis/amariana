@@ -48,7 +48,7 @@ class Writer:
 
     async def run(self):
         """Create email campaigns for prospects that need outreach."""
-        logger.info("Writer: Crafting email campaigns...")
+        logger.info("Writer: escrevendo campanhas de email...")
 
         # Load foundational skills for this agent
         self.skills = self.brain.load_skills_for_agent("writer")
@@ -56,7 +56,7 @@ class Writer:
         # Get prospects that haven't been contacted yet
         new_prospects = await self.state.get_prospects_by_status("new")
         if not new_prospects:
-            logger.info("Writer: No new prospects to write for.")
+            logger.info("Writer: nenhum lead novo para escrever.")
             return
 
         # Only write for prospects we can actually deliver to. Guessed and
@@ -69,7 +69,7 @@ class Writer:
         ]
         if not prospects_with_email:
             logger.info(
-                "Writer: No prospects with deliverable (verified/risky) emails yet."
+                "Writer: nenhum lead com email entregável (verificado/arriscado) ainda."
             )
             return
 
@@ -91,14 +91,14 @@ class Writer:
                 continue
 
             logger.info(
-                f"Writer: Creating campaign '{batch_name}' for "
-                f"{len(prospects)} prospects."
+                f"Writer: criando a campanha '{batch_name}' para "
+                f"{len(prospects)} leads."
             )
 
             # Generate the email sequence
             sequence = await self._write_sequence(prospects)
             if not sequence:
-                logger.warning(f"Writer: Failed to generate sequence for {batch_name}")
+                logger.warning(f"Writer: não deu para gerar a sequência de {batch_name}")
                 continue
 
             # Create the campaign
@@ -132,8 +132,8 @@ class Writer:
                 },
             )
             logger.info(
-                f"Writer: Campaign '{batch_name}' created with "
-                f"{len(sequence)} emails for {len(prospects)} prospects."
+                f"Writer: campanha '{batch_name}' criada com "
+                f"{len(sequence)} emails para {len(prospects)} leads."
             )
 
     async def _personalize_first_emails(self, campaign_id: str, prospects: list):
@@ -156,7 +156,7 @@ class Writer:
             try:
                 draft = await self._write_personal_email(prospect)
             except Exception as e:
-                logger.warning(f"Writer: personal draft failed for {prospect.email}: {e}")
+                logger.warning(f"Writer: rascunho personalizado falhou para {prospect.email}: {e}")
                 continue
             if not draft:
                 continue
@@ -176,8 +176,8 @@ class Writer:
 
         if drafted:
             logger.info(
-                f"Writer: drafted {drafted} personalized first email(s) "
-                f"({'awaiting approval' if require_approval else 'approved'})."
+                f"Writer: {drafted} primeiro(s) email(s) personalizado(s) "
+                f"({'esperando aprovação' if require_approval else 'aprovado(s)'})."
             )
 
     async def _write_personal_email(self, prospect) -> dict | None:
@@ -332,18 +332,18 @@ Return ONLY a JSON array (no markdown fences, no commentary):
                     result = result[key]
                     break
         if not isinstance(result, list) or not result:
-            logger.error(f"Writer: Brain did not return an email array (got {type(result).__name__}).")
+            logger.error(f"Writer: o cérebro não devolveu uma lista de emails (veio {type(result).__name__}).")
             return []
 
         steps: list[EmailStep] = []
         for i, raw in enumerate(result[:5]):  # never accept absurdly long sequences
             if not isinstance(raw, dict):
-                logger.warning(f"Writer: Skipping non-dict step at index {i}.")
+                logger.warning(f"Writer: pulando etapa inválida na posição {i}.")
                 continue
             subject = str(raw.get("subject") or "").strip()
             body = str(raw.get("body") or "").strip()
             if not subject or not body:
-                logger.warning(f"Writer: Skipping step {i + 1} with empty subject/body.")
+                logger.warning(f"Writer: pulando a etapa {i + 1} sem assunto/corpo.")
                 continue
             try:
                 delay = max(0, int(raw.get("delay_days", 3 if steps else 0)))
@@ -359,13 +359,13 @@ Return ONLY a JSON array (no markdown fences, no commentary):
                     )
                 )
             except Exception as e:
-                logger.warning(f"Writer: Skipping invalid step {i + 1}: {e}")
+                logger.warning(f"Writer: pulando a etapa inválida {i + 1}: {e}")
 
         if steps and steps[0].delay_days != 0:
             steps[0].delay_days = 0  # first email always sends immediately
 
         if len(steps) < 3:
-            logger.warning(f"Writer: Expected 3 emails, got {len(steps)}.")
+            logger.warning(f"Writer: esperava 3 emails, vieram {len(steps)}.")
         return steps
 
     def _language_for(self, prospects: list) -> str:
@@ -379,15 +379,16 @@ Return ONLY a JSON array (no markdown fences, no commentary):
     def _group_prospects(self, prospects: list) -> dict[str, list]:
         """Group prospects into campaign batches by market + industry.
 
-        Market first (Brazil vs abroad) so a batch never mixes languages: a
-        sequence is written once per batch, in that market's language.
+        Language first (from the company's country) so a batch never mixes
+        languages: a sequence is written once per batch, in that language.
         """
         batches: dict[str, list] = {}
 
         for prospect in prospects:
             industry = prospect.industry or "general"
             mk = self._markets.get(prospect.id, "")
-            key = f"{mk.lower()}-{industry}-outreach" if mk else f"{industry}-outreach"
+            # One batch = one language: Brazil, Mexico and the US never share a sequence.
+            key = f"{market.language(mk)}-{industry}-outreach" if mk else f"{industry}-outreach"
 
             if key not in batches:
                 batches[key] = []

@@ -9,7 +9,7 @@ A Mariana encontra quem precisa de vídeo, descobre algo específico sobre cada 
 - **Te conhece no primeiro uso.** Você manda um `.md` sobre você ou a empresa, o site e o portfólio; ela pergunta o que faltar (serviços, preços, clientes, mercados, tom de voz) e monta o dossiê que guia todo o resto.
 - **Encontra quem compra vídeo:** igrejas, eventos, casamentos, marcas, agências, academias, imobiliárias, times. Sinais como "site sem vídeo", canal do YouTube, Instagram e LinkedIn da empresa.
 - **Radar de eventos:** acha eventos dos próximos meses e aborda o organizador com antecedência.
-- **Canal certo por mercado:** Brasil = email + WhatsApp, em português. EUA e exterior = email + LinkedIn, em inglês. Instagram quando a empresa tem.
+- **Canal certo por mercado:** Brasil = email + WhatsApp. Exterior = email + LinkedIn. Sempre no idioma do país da empresa (português no Brasil, espanhol no México e na Espanha, inglês nos EUA, francês na França...). Instagram quando a empresa tem.
 - **Assinatura de email** gerada e aplicada em todo envio (texto + HTML), com instalação direta no Gmail.
 - **Email pronto pra enviar:** confere MX, SPF, DKIM e DMARC do domínio, testa a conexão e manda um teste.
 - **WhatsApp sem risco de ban:** você aprova e envia do seu próprio WhatsApp com um clique. A API oficial da Meta só para quem deu opt-in.

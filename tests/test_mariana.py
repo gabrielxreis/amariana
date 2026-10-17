@@ -189,3 +189,48 @@ def test_pending_questions_skip_answered():
     keys = [k for k, _ in Onboarding.pending_questions(extracted)]
     assert "person.name" not in keys and "x" in keys
     assert "offer.packages" not in keys
+
+
+# ── idioma pelo país da empresa ──
+
+@pytest.mark.parametrize("phone,domain,location,country,lang", [
+    ("+52 55 1234 5678", "", "", "MX", "es"),
+    ("+34 911 234 567", "", "", "ES", "es"),
+    ("+33 1 23 45 67 89", "", "", "FR", "fr"),
+    ("+1 512 555 0100", "", "", "US", "en"),
+    ("+351 21 123 4567", "", "", "PT", "pt-PT"),
+    ("+598 2 123 4567", "", "", "UY", "es"),
+    ("", "iglesia.com.mx", "", "MX", "es"),
+    ("", "eglise.fr", "", "FR", "fr"),
+    ("", "studio.co.uk", "", "GB", "en"),
+    ("", "", "Buenos Aires", "AR", "es"),
+    ("", "", "Austin, TX", "US", "en"),
+    ("", "", "Niterói, RJ", "BR", "pt-BR"),
+    ("(21) 99999-8888", "", "", "BR", "pt-BR"),
+])
+def test_language_follows_company_country(phone, domain, location, country, lang):
+    mk = market.detect(phone, domain, location, "pt-BR")
+    assert mk.country == country
+    assert market.language(mk) == lang
+    assert (mk == market.BR) == (country == "BR")   # channel rule unchanged
+
+
+def test_language_names_and_pick():
+    mx = market.detect("+52 55 1234 5678")
+    assert "Spanish" in market.language_name(mx) and "México" in market.language_name(mx)
+    assert market.language_name(market.detect(location="London")) == "British English"
+    assert market.pick(mx, pt="oi", es="hola", en="hi") == "hola"
+    assert market.pick("fr", pt="oi", en="hi") == "hi"          # falls back to English
+    assert market.pick(market.BR, pt="oi", en="hi") == "oi"
+
+
+def test_writer_batches_never_mix_languages():
+    from harvey.agents.writer import Writer
+    w = Writer.__new__(Writer)
+    w.config = _config()
+    w._markets = {"a": market.detect("+52 55 1"), "b": market.detect("+1 512 5"),
+                  "c": market.detect("+55 21 99999 8888")}
+    w.config.channels.email.provider = "smtp"
+    groups = w._group_prospects([Prospect(id=i, industry="Igrejas") for i in "abc"])
+    assert len(groups) == 3
+    assert any(k.startswith("es-") for k in groups) and any(k.startswith("en-") for k in groups)

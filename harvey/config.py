@@ -473,7 +473,7 @@ def load_config(config_path: str | None = None) -> MarianaConfig:
         # ValidationError so callers (and tests) keep the pydantic type.
         logger.error(
             f"Invalid configuration in {config_path}:\n{_format_validation_error(e)}\n"
-            "Fix the fields above or re-run 'mariana setup'."
+            "Corrija os campos acima ou rode 'mariana onboard' de novo."
         )
         raise
 

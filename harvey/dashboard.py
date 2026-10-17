@@ -66,7 +66,7 @@ async def query_db(sql: str, params: tuple = ()) -> list[dict]:
                 rows = await cursor.fetchall()
                 return [dict(r) for r in rows]
     except Exception as e:
-        logger.warning("query_db failed (%s): %s", sql.split(None, 4)[:4], e)
+        logger.warning("consulta ao banco falhou (%s): %s", sql.split(None, 4)[:4], e)
         return []
 
 
@@ -321,7 +321,7 @@ async def save_env_settings(request: Request):
             try:
                 _write_env_file(updates)
             except Exception as e:
-                logger.warning("Failed to write .env: %s", e)
+                logger.warning("Não deu para salvar o .env: %s", e)
                 return {"success": False, "message": "Could not write .env file."}
     return {"success": True}
 
@@ -412,7 +412,7 @@ async def add_feedback(request: Request):
             )
             await db.commit()
     except Exception as e:
-        logger.warning("Failed to save feedback: %s", e)
+        logger.warning("Não deu para salvar o comentário: %s", e)
         return {"success": False, "message": "Could not save feedback."}
     return {"success": True, "id": feedback_id}
 
@@ -463,7 +463,7 @@ async def start_harvey():
             # Child holds its own copies of the fds; don't leak ours.
             log_handle.close()
     except Exception as e:
-        logger.warning("Failed to start Mariana: %s", e)
+        logger.warning("Não deu para ligar a Mariana: %s", e)
         return {"success": False, "message": f"Failed to start Mariana: {e}"}
     _harvey_started_at = datetime.now()
 
@@ -471,7 +471,7 @@ async def start_harvey():
     try:
         PID_FILE.write_text(str(_harvey_process.pid))
     except OSError as e:
-        logger.warning("Could not write PID file: %s", e)
+        logger.warning("Não deu para salvar o arquivo PID: %s", e)
 
     return {"success": True, "pid": _harvey_process.pid}
 
@@ -876,14 +876,14 @@ async def whatsapp_inbound(request: Request):
                         "AND target = ? AND prospect_id != '' ORDER BY created_at DESC LIMIT 1",
                         (phone,))
                     if not rows:
-                        logger.info(f"whatsapp webhook: message from unknown {phone}")
+                        logger.info(f"webhook do WhatsApp: mensagem de número desconhecido {phone}")
                         continue
                     prospect = await state.get_prospect(rows[0]["prospect_id"])
                     if prospect:
                         await handler.handle_external_reply(
                             prospect, (msg.get("text") or {}).get("body", ""), "whatsapp")
     except Exception as e:
-        logger.error(f"whatsapp webhook failed: {e}")
+        logger.error(f"webhook do WhatsApp falhou: {e}")
     return {"ok": True}
 
 
@@ -918,7 +918,7 @@ async def export_prospects(all: bool = False, min_score: int = 0, email_status: 
             state, email_statuses=statuses, min_score=min_score, include_all=all,
         )
     except Exception as e:
-        logger.warning("Prospect export failed: %s", e)
+        logger.warning("A exportação de leads falhou: %s", e)
         text = ""
     return PlainTextResponse(
         text,
@@ -1049,7 +1049,7 @@ async def _start_production(state, job_id: str) -> dict:
         config = load_config()
         return await on_job_won(state, Brain(state, config.brain), config, job_id)
     except Exception as e:
-        logger.warning(f"production setup failed: {e}")
+        logger.warning(f"falhou ao preparar a produção: {e}")
         return {"error": str(e)}
 
 
@@ -1123,9 +1123,10 @@ async def _draft_extra_revision(state, job: dict, used: int, included: int):
             job, market.language(mk))
         if body:
             await agent._draft_to_client(job, prospect, body, "revision",
-                                         "sobre a revisão" if mk == market.BR else "about the revision")
+                                         market.pick(mk, pt="sobre a revisão", es="sobre la revisión",
+                                                     fr="à propos de la révision", en="about the revision"))
     except Exception as e:
-        logger.warning(f"extra revision draft failed: {e}")
+        logger.warning(f"falhou o rascunho de revisão extra: {e}")
 
 
 @app.get("/api/proposals/{name}")

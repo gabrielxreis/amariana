@@ -37,15 +37,23 @@ MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July",
 # Industry keyword → event searches, per language.
 EVENT_TYPES = {
     "igreja": (["conferência igreja", "congresso gospel", "encontro de jovens igreja"],
-               ["church conference", "worship night", "youth conference church"]),
+               ["church conference", "worship night", "youth conference church"],
+               ["conferencia iglesia", "congreso cristiano"]),
     "evento": (["conferência", "congresso", "festival"],
-               ["conference", "summit", "festival"]),
-    "casamento": (["feira de noivas", "expo noivas"], ["bridal show", "wedding expo"]),
-    "esporte": (["campeonato", "corrida de rua"], ["tournament", "marathon"]),
-    "marca": (["lançamento", "feira de negócios"], ["product launch event", "trade show"]),
+               ["conference", "summit", "festival"],
+               ["conferencia", "congreso", "festival"]),
+    "casamento": (["feira de noivas", "expo noivas"], ["bridal show", "wedding expo"],
+                  ["expo novias", "feria de bodas"]),
+    "esporte": (["campeonato", "corrida de rua"], ["tournament", "marathon"],
+                ["torneo", "maratón"]),
+    "marca": (["lançamento", "feira de negócios"], ["product launch event", "trade show"],
+              ["lanzamiento", "feria de negocios"]),
 }
+MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+             "septiembre", "octubre", "noviembre", "diciembre"]
 SITES = {"pt-BR": "(site:sympla.com.br OR site:even3.com.br OR site:eventbrite.com.br)",
-         "en": "(site:eventbrite.com OR site:allevents.in)"}
+         "en": "(site:eventbrite.com OR site:allevents.in)",
+         "es": "(site:eventbrite.com.mx OR site:eventbrite.es OR site:passline.com OR site:allevents.in)"}
 
 
 def build_queries(industries: list[str], places: list[tuple[str, str]],
@@ -60,14 +68,16 @@ def build_queries(industries: list[str], places: list[tuple[str, str]],
             (k == "evento" and "event" in i.lower()) or
             (k == "casamento" and "wedding" in i.lower()) for i in industries)] or ["evento"]
     for place, lang in places:
-        pt = lang.startswith("pt")
+        idx, months_list, site = ((0, MONTHS_PT, SITES["pt-BR"]) if lang.startswith("pt") else
+                                  (2, MONTHS_ES, SITES["es"]) if lang.startswith("es") else
+                                  (1, MONTHS_EN, SITES["en"]))
         for offset in range(months):
             m = (today.month - 1 + offset) % 12
             year = today.year + (today.month - 1 + offset) // 12
-            month = (MONTHS_PT if pt else MONTHS_EN)[m]
+            month = months_list[m]
             for key in keys:
-                for term in EVENT_TYPES[key][0 if pt else 1][:2]:
-                    queries.append(f'{term} {place} {month} {year} {SITES["pt-BR" if pt else "en"]}')
+                for term in EVENT_TYPES[key][idx][:2]:
+                    queries.append(f'{term} {place} {month} {year} {site}')
     return queries
 
 
@@ -109,7 +119,8 @@ async def find_organizer_site(client, api_key: str, organizer: str, city: str) -
 async def run_event_radar(state, brain, config, env, months: int = 3,
                           max_queries: int = 24, estimate_only: bool = False) -> dict:
     from harvey import market
-    places = [(g, "pt-BR" if market.detect(location=g) == market.BR else "en")
+    default_lang = getattr(config.persona, "language", "pt-BR")
+    places = [(g, market.language(market.detect(location=g, default_language=default_lang)))
               for g in config.icp.geography]
     queries = build_queries(config.icp.industries, places, months)[:max_queries]
     est = round(len(queries) * COST_PER_QUERY * 2, 3)  # + organizer lookups
@@ -125,7 +136,7 @@ async def run_event_radar(state, brain, config, env, months: int = 3,
             try:
                 results += await _search(client, env.serper_api_key, q)
             except httpx.HTTPError as e:
-                logger.warning(f"events: search failed ({e})")
+                logger.warning(f"eventos: a busca falhou ({e})")
         events = await extract_events(brain, results, today, months * 31)
         added = 0
         seen: set[str] = set()

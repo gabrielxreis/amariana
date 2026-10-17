@@ -1421,8 +1421,8 @@ class CodexClient:
         model = pick_default_model(catalog)
         if model != self._announced_default:
             logger.info(
-                f"Codex: using {model}, the first listed model whose tools can be "
-                "fully disabled. Set brain.model in harvey.yaml to choose another."
+                f"Codex: usando {model}, o primeiro modelo da lista em que dá para "
+                "desligar todas as ferramentas. Para escolher outro, mude brain.model no config."
             )
             self._announced_default = model
         return model

@@ -201,7 +201,7 @@ class ChannelsAgent:
         body = clean_message(str(result.get("message", "")))
         note = clean_message(str(result.get("note", "")))[:LINKEDIN_NOTE_LIMIT]
         if len(body.split()) > WORD_LIMITS[channel] * 1.5:
-            logger.warning(f"Channels: {channel} draft for {company_name} too long.")
+            logger.warning(f"Channels: rascunho de {channel} para {company_name} longo demais.")
             return None
         return {"body": body, "note": note if channel == "linkedin" else ""}
 

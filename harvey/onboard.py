@@ -148,7 +148,7 @@ async def crawl_site(url: str, max_pages: int = 15) -> str:
     try:
         pages = await FallbackCrawler().crawl(url, max_pages=max_pages)
     except Exception as e:
-        logger.warning(f"onboard: could not crawl {url}: {e}")
+        logger.warning(f"onboard: não deu para ler {url}: {e}")
         return ""
     return "\n\n".join(f"--- {u} ---\n{t[:6000]}" for u, t in pages.items())
 
@@ -420,7 +420,7 @@ def write_outputs(profile: dict, answers: dict) -> dict[str, Path]:
         from harvey.signature import write_files
         paths.update(write_files(load_config(str(LOCAL_CONFIG))))
     except Exception as e:
-        logger.warning(f"onboard: signature not generated yet: {e}")
+        logger.warning(f"onboard: a assinatura ainda não foi gerada: {e}")
     return paths
 
 

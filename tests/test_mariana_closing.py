@@ -249,5 +249,5 @@ async def test_metrics_by_channel_and_market(tmp_path):
     m = await compute(sm)
     assert m["total"] == {"contacted": 2, "replied": 1, "won": 0, "reply_rate": 50.0, "win_rate": 0.0}
     by_market = {r["key"]: r for r in m["by_market"]}
-    assert by_market["Brasil"]["reply_rate"] == 100.0 and by_market["Exterior"]["replied"] == 0
+    assert by_market["Brasil"]["reply_rate"] == 100.0 and by_market["EUA"]["replied"] == 0
     assert {r["key"] for r in m["by_channel"]} == {"email", "whatsapp"}

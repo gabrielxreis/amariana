@@ -610,5 +610,5 @@ async def find_email(
         # Verification couldn't decide — an honest guess, never "verified".
         status = "guess"
 
-    logger.info(f"Email for {first_name} {last_name}@{domain}: {candidate} [{status}]")
+    logger.info(f"Email de {first_name} {last_name}@{domain}: {candidate} [{status}]")
     return EmailResult(email=candidate, status=status, pattern=pattern, mx_type=mx_type)

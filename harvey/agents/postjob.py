@@ -63,7 +63,7 @@ class PostJobAgent:
                 f"their next event is on {job.get('next_event_date')}: offer to cover it, "
                 "reference the previous project in one line, ask if they want to talk")
         prompt = f"""Write a short {channel} message from an audiovisual professional to a
-past client, in {"Brazilian Portuguese" if language.startswith("pt") else "American English"},
+past client, in {market.name_for_code(language)},
 first person, warm and direct, under 70 words, one question at the end. No em
 dashes, no exclamation marks, no signature, no links.
 
@@ -131,7 +131,7 @@ Return ONLY the message text."""
 
     async def _short(self, goal: str, job: dict, language: str) -> str:
         prompt = f"""Write a short message from an audiovisual professional to a client, in
-{"Brazilian Portuguese" if language.startswith("pt") else "American English"}, first person,
+{market.name_for_code(language)}, first person,
 warm, under 50 words, no em dashes, no exclamation marks, no signature, no links.
 Client: {job.get('contact_name')} at {job.get('company_name')}. Project: {job.get('service')}.
 Goal: {goal}
@@ -151,7 +151,6 @@ Return ONLY the message."""
             mk = await market.for_prospect(self.state, prospect,
                                            getattr(self.config.persona, "language", "pt-BR"))
             language = market.language(mk)
-            pt = language.startswith("pt")
 
             if self.followup_due(job, today, await self._last_client_message(job)):
                 n = int(job.get("followups") or 0)
@@ -162,7 +161,7 @@ Return ONLY the message."""
                 body = await self._short(goal, job, language)
                 if body and await self._draft_to_client(
                         job, prospect, body, "proposal_followup",
-                        "sobre a proposta" if pt else "about the proposal"):
+                        market.pick(language, pt="sobre a proposta", es="sobre la propuesta", fr="à propos de la proposition", en="about the proposal")):
                     await self.state.update_job(job["id"], followups=n + 1,
                                                 last_followup_at=today.isoformat())
                     done += 1
@@ -182,7 +181,7 @@ Return ONLY the message."""
                     "contact", job, language)
                 if body:
                     await self._draft_to_client(job, prospect, body, "reminder",
-                                                "amanhã" if pt else "tomorrow")
+                                                market.pick(language, pt="amanhã", es="mañana", fr="demain", en="tomorrow"))
                 await self.state.update_job(job["id"], reminder_sent_at=today.isoformat())
                 done += 1
 
@@ -196,7 +195,7 @@ Return ONLY the message."""
         try:
             await self.production_tick()
         except Exception as e:
-            logger.warning(f"PostJob: production tick failed: {e}")
+            logger.warning(f"PostJob: falhou a rodada de produção: {e}")
         if not self.cfg.enabled:
             return 0
         today = date.today()
@@ -231,9 +230,11 @@ Return ONLY the message."""
                     opted_in=True, mode=self.config.channels.whatsapp.mode,
                 )
             else:
-                subject = ("obrigado pelo projeto" if moment == "testimonial" and language.startswith("pt")
-                           else "thank you for the project" if moment == "testimonial"
-                           else "próximo evento" if language.startswith("pt") else "your next event")
+                subject = (market.pick(language, pt="obrigado pelo projeto", es="gracias por el proyecto",
+                                       fr="merci pour le projet", en="thank you for the project")
+                           if moment == "testimonial" else
+                           market.pick(language, pt="próximo evento", es="su próximo evento",
+                                       fr="votre prochain événement", en="your next event"))
                 await self.state.add_outbox_item(
                     prospect_id=prospect.id, to_email=prospect.email, subject=subject,
                     body=body, kind="postjob", status="pending_review",
@@ -244,5 +245,5 @@ Return ONLY the message."""
                 job["id"], **({"testimonial_requested_at": stamp} if moment == "testimonial"
                               else {"reengaged_at": stamp}))
             drafted += 1
-            logger.info(f"PostJob: {moment} draft for {job.get('company_name')} ({channel}).")
+            logger.info(f"PostJob: rascunho de {moment} para {job.get('company_name')} ({channel}).")
         return drafted

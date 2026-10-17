@@ -85,8 +85,8 @@ class LinkedInAutomation:
             self._activity = {"date": today, "search_pages": 0, "profile_views": 0}
         if self._activity.get(kind, 0) >= cap:
             logger.warning(
-                f"LinkedIn daily cap reached for {kind} "
-                f"({cap}/day). Skipping to protect the account."
+                f"Limite diário do LinkedIn atingido para {kind} "
+                f"({cap}/dia). Pulando para proteger a conta."
             )
             return True
         return False
@@ -144,7 +144,7 @@ class LinkedInAutomation:
                     await self.context.add_cookies(cookies)
                     logger.info("Loaded saved LinkedIn cookies.")
             except Exception as e:
-                logger.warning(f"Could not load saved LinkedIn cookies: {e}")
+                logger.warning(f"Não deu para carregar os cookies do LinkedIn: {e}")
 
         self.page = await self.context.new_page()
 
@@ -157,7 +157,7 @@ class LinkedInAutomation:
             except OSError:
                 pass
         except OSError as e:
-            logger.warning(f"Could not save LinkedIn cookies: {e}")
+            logger.warning(f"Não deu para salvar os cookies do LinkedIn: {e}")
 
     async def stop(self):
         """Save cookies and close browser."""
@@ -193,7 +193,7 @@ class LinkedInAutomation:
             await self.start()
 
         if not self.email or not self.password:
-            logger.warning("LinkedIn credentials not configured; cannot log in.")
+            logger.warning("Login do LinkedIn não configurado; não dá para entrar.")
             return False
 
         try:
@@ -202,7 +202,7 @@ class LinkedInAutomation:
             )
             await self._wait_settled()
         except Exception as e:
-            logger.error(f"Could not load LinkedIn login page: {e}")
+            logger.error(f"Não deu para abrir a página de login do LinkedIn: {e}")
             return False
 
         await self._random_delay(1, 3)
@@ -230,18 +230,18 @@ class LinkedInAutomation:
             # Check for security challenge
             if "checkpoint" in self.page.url or "challenge" in self.page.url:
                 logger.warning(
-                    "LinkedIn security checkpoint detected. "
-                    "Please log in manually and save cookies."
+                    "O LinkedIn pediu verificação de segurança. "
+                    "Entre manualmente e salve os cookies."
                 )
                 return False
 
-            logger.warning(f"Login may have failed. Current URL: {self.page.url}")
+            logger.warning(f"O login pode ter falhado. Endereço atual: {self.page.url}")
             return False
 
         except Exception as e:
             # Never include credentials in logged errors.
             msg = str(e).replace(self.password, "***") if self.password else str(e)
-            logger.error(f"LinkedIn login failed: {msg}")
+            logger.error(f"O login no LinkedIn falhou: {msg}")
             return False
 
     # ── Search ──
@@ -266,7 +266,7 @@ class LinkedInAutomation:
         # Fold all criteria into the keyword search (URL-encoded).
         terms = " ".join(t for t in [keywords, title, company, location] if t).strip()
         if not terms:
-            logger.warning("search_people called with no criteria; skipping.")
+            logger.warning("search_people chamado sem critério; pulando.")
             return []
 
         search_url = (
@@ -285,7 +285,7 @@ class LinkedInAutomation:
             try:
                 await self.page.goto(url, timeout=30000)
             except Exception as e:
-                logger.warning(f"Failed to load search page {page_num}: {e}")
+                logger.warning(f"Não deu para abrir a página de busca {page_num}: {e}")
                 break
 
             self._record("search_pages")
@@ -303,7 +303,7 @@ class LinkedInAutomation:
                 )
 
             if not cards:
-                logger.info(f"No results found on page {page_num}.")
+                logger.info(f"Nenhum resultado na página {page_num}.")
                 break
 
             for card in cards:
@@ -390,7 +390,7 @@ class LinkedInAutomation:
         try:
             await self.page.goto(linkedin_url, timeout=30000)
         except Exception as e:
-            logger.warning(f"Failed to load profile {linkedin_url}: {e}")
+            logger.warning(f"Não deu para abrir o perfil {linkedin_url}: {e}")
             return None
 
         self._record("profile_views")

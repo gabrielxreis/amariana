@@ -451,9 +451,9 @@ def test_setup_model_prompt(monkeypatch, answers, expected):
     if expected.provider == "codex":
         # Suggested, never forced: an explicit name is kept as typed (and
         # validated; a flag-like answer is asked again).
-        assert all(p == ("Model", SUGGESTED_MODEL) for p in model_prompts)
+        assert all(p == ("Modelo", SUGGESTED_MODEL) for p in model_prompts)
     else:
-        assert model_prompts == [("Model (leave blank for the default)", "")]
+        assert model_prompts == [("Modelo (deixe em branco para o padrão)", "")]
 
 
 def test_setup_writes_the_selection(tmp_path, monkeypatch):
@@ -645,7 +645,7 @@ def test_cli_status_shows_a_recorded_pause(monkeypatch, tmp_path, capsys):
                       setting=json.dumps({"provider": "codex", "status": "paused",
                                           "reason": "Codex CLI 0.160.0 hasn't been verified",
                                           "since": "2026-10-13T12:00:00Z"}))
-    assert "Codex PAUSED since 2026-10-13T12:00:00Z" in out
+    assert "Codex PAUSADO desde 2026-10-13T12:00:00Z" in out
     assert "0.160.0 hasn't been verified" in out
 
 
@@ -659,7 +659,7 @@ def test_cli_status_check_reports_readiness(monkeypatch, tmp_path, capsys):
                     config=BrainConfig(provider="codex", model="gpt-5.5"))
     assert exit_info.value.code == 1
     out = capsys.readouterr().out
-    assert "Codex (gpt-5.5) NOT READY" in out and "due for renewal" in out
+    assert "Codex (gpt-5.5) NÃO ESTÁ PRONTO" in out and "due for renewal" in out
 
     async def ready(self):
         return ""
@@ -667,9 +667,9 @@ def test_cli_status_check_reports_readiness(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(brain_mod.Brain, "preflight", ready)
     out = _status_cli(monkeypatch, tmp_path, capsys, check=True,
                       config=BrainConfig(provider="codex", model="gpt-5.5"))
-    assert "Codex (gpt-5.5) ready" in out
+    assert "Codex (gpt-5.5) pronto" in out
     out = _status_cli(monkeypatch, tmp_path, capsys, check=True, config=BrainConfig())
-    assert "Claude (not checked" in out
+    assert "Claude (não conferido" in out
 
 
 def test_quota_card_renders_unavailable_codex_quota():
@@ -716,8 +716,8 @@ def test_cli_usage_reads_only_the_active_providers_quota(monkeypatch, tmp_path, 
     monkeypatch.setattr(quota_mod, "QuotaClient", ClaudeQuota)
     cli.cmd_usage(type("A", (), {"days": 30})())
     out = capsys.readouterr().out
-    assert "Codex Usage" in out and "Claude Usage" not in out
-    assert "21.0% used" in out
+    assert "Uso do Codex" in out and "Uso do Claude" not in out
+    assert "21.0% usado" in out
 
 
 _STALE_CODEX_PAUSE = (
@@ -739,8 +739,8 @@ def test_dashboard_hides_another_providers_pause(client, monkeypatch):
 def test_cli_status_hides_another_providers_pause(monkeypatch, tmp_path, capsys):
     out = _status_cli(monkeypatch, tmp_path, capsys, check=False, config=BrainConfig(),
                       setting=_STALE_CODEX_PAUSE)
-    assert "PAUSED" not in out
+    assert "PAUSADO" not in out
     out = _status_cli(monkeypatch, tmp_path / "x", capsys, check=False,
                       config=BrainConfig(provider="codex", model="gpt-5.5"),
                       setting=_STALE_CODEX_PAUSE)
-    assert "Codex PAUSED" in out
+    assert "Codex PAUSADO" in out

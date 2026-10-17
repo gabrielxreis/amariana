@@ -64,8 +64,9 @@ Outras opções: Microsoft 365 (`docs/microsoft365.md`) ou SMTP/IMAP.
 
 ### Passo 5: WhatsApp, LinkedIn e Instagram
 Regra de canal por mercado (automática, `harvey/market.py`):
-- **Brasil**: email + WhatsApp, em português.
-- **EUA e resto do mundo**: email + LinkedIn (Instagram se a empresa tiver), em inglês.
+- **Brasil**: email + WhatsApp.
+- **Resto do mundo**: email + LinkedIn (Instagram se a empresa tiver).
+- **Idioma**: sempre o do país onde a empresa está (pelo DDI, pelo domínio e pela cidade): português, espanhol, inglês, francês...
 
 Tudo cai na aba **Mensagens** do painel. A Mariana escreve; a pessoa aprova, clica em "Abrir no WhatsApp" (abre o WhatsApp dela com o texto pronto) ou "Copiar e abrir perfil" (LinkedIn/Instagram) e envia da própria conta. Nenhuma conta é automatizada, então não há risco de ban.
 - `mariana whatsapp-check` confere a configuração.
@@ -130,7 +131,7 @@ A pasta do código se chama `harvey/` por motivo interno; o comando é `mariana`
 - **Sinais** (`signals.py`): todo fato é uma linha em `observations`. Só sinais confirmados pelo usuário são coletados; `state.cohort(require, exclude)` monta o público em SQL.
 - **Painel** (`dashboard.py` + `harvey/web/`): API FastAPI e HTML/CSS/JS servidos do disco, sem build.
 - **Descoberta** (`collectors/discover.py`): estima antes, respeita teto de gasto, filtra lixo por padrão; o radar de eventos fica em `collectors/events.py`.
-- **Mercado e canais** (`market.py`, `agents/channels.py`): Brasil ou exterior pelo telefone, domínio ou cidade; define idioma e canal.
+- **Mercado e canais** (`market.py`, `agents/channels.py`): país da empresa pelo DDI, domínio ou cidade; o país define o idioma, e Brasil/exterior define o canal.
 - **Fechamento** (`proposal.py`, `pricing.py`, `production.py`, `agents/postjob.py`, `samples.py`, `metrics.py`, `notify.py`, `integrations/calendar.py`).
 
 ### Agentes

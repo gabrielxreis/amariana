@@ -81,7 +81,7 @@ def _load_token() -> dict | None:
             if isinstance(data, dict) and data.get("refresh_token"):
                 return data
     except (OSError, json.JSONDecodeError) as e:
-        logger.warning(f"Could not read Microsoft token file: {e}")
+        logger.warning(f"Não deu para ler o token da Microsoft: {e}")
     return None
 
 
@@ -240,7 +240,7 @@ class MicrosoftProvider(MailProvider):
                     await self._request("PATCH", f"/me/messages/{draft['id']}", json=content)
                 except GraphError as e:
                     # Their message is gone (deleted/moved): send unthreaded.
-                    logger.warning(f"Microsoft: createReply failed ({e}); sending as new.")
+                    logger.warning(f"Microsoft: a resposta no fio falhou ({e}); enviando como email novo.")
                     if draft and draft.get("id"):
                         await self._delete_draft(draft["id"])
                     draft = None
@@ -250,7 +250,7 @@ class MicrosoftProvider(MailProvider):
         except (GraphError, KeyError) as e:
             if draft and draft.get("id"):
                 await self._delete_draft(draft["id"])
-            logger.error(f"Microsoft send failed to {to_email}: {e}")
+            logger.error(f"O envio pela Microsoft falhou para {to_email}: {e}")
             return SendResult(ok=False, error=str(e)[:300])
         return SendResult(
             ok=True,
@@ -422,7 +422,7 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
     import urllib.parse
 
     if not client_id:
-        print("  Set M365_CLIENT_ID (and M365_TENANT_ID) in .env first.")
+        print("  Coloque M365_CLIENT_ID (e M365_TENANT_ID) no .env antes.")
         print("  (entra.microsoft.com → App registrations → New registration)")
         return False
     tenant = tenant or "organizations"
@@ -457,7 +457,7 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
             self.send_header("Content-Type", "text/html")
             self.end_headers()
             self.wfile.write(
-                b"<h2>Mariana is connected to Microsoft 365.</h2>You can close this tab.")
+                "<h2>Mariana est\u00e1 conectada ao Microsoft 365.</h2>Pode fechar esta aba.".encode())
             done.set()
 
         def log_message(self, *args):
@@ -474,18 +474,18 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
     for server in servers:
         threading.Thread(target=server.serve_forever, daemon=True).start()
 
-    print(f"\n  Opening browser for Microsoft sign-in...\n  {auth_url}\n")
+    print(f"\n  Abrindo o navegador para entrar na Microsoft...\n  {auth_url}\n")
     webbrowser.open(auth_url)
     finished = done.wait(timeout=300)
     for server in servers:
         server.shutdown()
         server.server_close()
     if not finished:
-        print("  Timed out waiting for the browser round-trip.")
+        print("  O navegador não voltou a tempo. Tente de novo.")
         return False
 
     if result.get("error") or not result.get("code"):
-        print(f"  Authorization failed: {result.get('error') or 'no code returned'}")
+        print(f"  A autorização falhou: {result.get('error') or 'nenhum código recebido'}")
         return False
 
     resp = httpx.post(_token_url(tenant), data={
@@ -497,11 +497,11 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
         "scope": SCOPE,
     }, timeout=30)
     if resp.status_code != 200:
-        print(f"  Token exchange failed ({resp.status_code}): {resp.text[:300]}")
+        print(f"  A troca do token falhou ({resp.status_code}): {resp.text[:300]}")
         return False
     data = resp.json()
     if not data.get("refresh_token"):
-        print("  Microsoft returned no refresh token (offline_access missing?).")
+        print("  A Microsoft não devolveu o token de renovação (faltou offline_access?).")
         return False
     _save_token({
         "refresh_token": data["refresh_token"],
@@ -509,7 +509,7 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
         "scope": data.get("scope", SCOPE),
         "obtained_at": int(time.time()),
     })
-    print(f"  ✓ Microsoft 365 authorized. Token stored at {TOKEN_FILE}")
+    print(f"  ✓ Microsoft 365 conectado. Token salvo em {TOKEN_FILE}")
     return True
 
 

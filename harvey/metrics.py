@@ -56,7 +56,9 @@ async def compute(state, default_language: str = "pt-BR") -> dict:
         seg = portfolio.segment_of(prospect.industry, prospect.company,
                                    company.name if company else "",
                                    company.industry if company else "") or "outros"
-        keys = [("market", "Brasil" if mk == market.BR else "Exterior"), ("segment", seg)]
+        country = market.COUNTRY_NAMES.get(getattr(mk, "country", ""), "")
+        place = country or ("Brasil" if mk == market.BR else "Exterior")
+        keys = [("market", place), ("segment", seg)]
         keys += [("channel", ch) for ch in channels]
         for dim, key in keys:
             by[dim][key][0] += 1

@@ -132,7 +132,7 @@ async def geocode_city(state, city: str, radius_km: int = 40,
         r.raise_for_status()
         hits = r.json()
     except Exception as e:
-        logger.warning("geocode failed for %r: %s", city, e)
+        logger.warning("não deu para achar as coordenadas de %r: %s", city, e)
         return ""
     finally:
         if owned:
@@ -140,7 +140,7 @@ async def geocode_city(state, city: str, radius_km: int = 40,
 
     if not hits:
         await state.set_setting(cache_key, "-")
-        logger.warning("geocode: no match for %r", city)
+        logger.warning("coordenadas: nada encontrado para %r", city)
         return ""
 
     point = f"{float(hits[0]['lat']):.4f},{float(hits[0]['lon']):.4f}"
@@ -548,8 +548,8 @@ class OpenStreetMap(DiscoveryProvider):
 
     async def fetch(self, client, env, query):
         if not query.coordinate:
-            logger.warning("osm: no coordinate for %r — Overpass needs a "
-                           "lat,lng,radius to search", query.keyword())
+            logger.warning("osm: sem coordenada (coordinate) para %r: o mapa precisa de "
+                           "lat,lng,raio para buscar", query.keyword())
             return []
         tags = self._tags(query.term)
         if not tags:
@@ -583,7 +583,7 @@ class OpenStreetMap(DiscoveryProvider):
                 continue
             if r.status_code not in (429, 504):
                 break
-            logger.warning("osm: %s is throttling (%s) — trying the next mirror",
+            logger.warning("osm: %s está limitando (%s); tentando o próximo servidor",
                            endpoint, r.status_code)
         else:
             raise RuntimeError(
@@ -798,7 +798,7 @@ async def run_discovery(
                 except Exception as e:
                     # A failure is an observation about the run, not a reason
                     # to lose the queries that already succeeded.
-                    logger.warning("discover: %s failed on %r: %s",
+                    logger.warning("discover: %s falhou em %r: %s",
                                    provider_key, query.keyword(), e)
                     report.errors.append(f"{query.keyword()}: {e}")
                     continue

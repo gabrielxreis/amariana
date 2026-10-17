@@ -95,17 +95,17 @@ async def decide_next_action(
     open_conversations = summary.get("open_conversations", 0) or 0
 
     if open_conversations > 0:
-        action, reason = "handle_replies", f"{open_conversations} open conversation(s) waiting"
+        action, reason = "handle_replies", f"{open_conversations} conversa(s) aberta(s) esperando"
     elif draft_campaigns > 0:
-        action, reason = "send_campaign", f"{draft_campaigns} draft campaign(s) ready to deploy"
+        action, reason = "send_campaign", f"{draft_campaigns} campanha(s) pronta(s) para a fila"
     elif new_prospects > 0:
-        action, reason = "write_campaign", f"{new_prospects} new prospect(s) with no drafts ready"
+        action, reason = "write_campaign", f"{new_prospects} lead(s) novo(s) sem mensagem ainda"
     elif new_prospects < 20:
-        action, reason = "prospect", f"only {new_prospects} new prospect(s); pipeline needs leads"
+        action, reason = "prospect", f"só {new_prospects} lead(s) novo(s); o funil precisa de leads"
     else:
-        action, reason = "idle", "pipeline is healthy; running analysis"
+        action, reason = "idle", "funil saudável; rodando a análise"
 
-    logger.info(f"Decision: {action} ({reason})")
+    logger.info(f"Decisão: {action} ({reason})")
     return action
 
 
@@ -120,7 +120,7 @@ async def _run_agents(tasks: list) -> dict:
     if not tasks:
         return {}
     if len(tasks) > 1:
-        logger.info(f"Running {len(tasks)} agents in parallel: {[t[0] for t in tasks]}")
+        logger.info(f"Rodando {len(tasks)} agentes em paralelo: {[t[0] for t in tasks]}")
     try:
         results = await asyncio.wait_for(
             asyncio.gather(*[t[1] for t in tasks], return_exceptions=True),
@@ -128,9 +128,9 @@ async def _run_agents(tasks: list) -> dict:
         )
     except asyncio.TimeoutError:
         logger.error(
-            f"Cycle timed out after {CYCLE_TIMEOUT_SECONDS}s with "
-            f"{[t[0] for t in tasks]} still running — cancelled, "
-            "moving on to the next heartbeat instead of hanging forever."
+            f"O ciclo passou de {CYCLE_TIMEOUT_SECONDS}s com "
+            f"{[t[0] for t in tasks]} ainda rodando: cancelado, "
+            "seguindo para o próximo ciclo em vez de travar."
         )
         results = []
     outcomes = {}
@@ -138,7 +138,7 @@ async def _run_agents(tasks: list) -> dict:
         if isinstance(result, asyncio.CancelledError):
             raise result
         if isinstance(result, Exception):
-            logger.error(f"Agent {name} failed: {result}", exc_info=result)
+            logger.error(f"O agente {name} falhou: {result}", exc_info=result)
         outcomes[name] = result
     return outcomes
 
@@ -169,19 +169,19 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
     except (ConfigError, Exception) as e:
         if isinstance(e, (KeyboardInterrupt, asyncio.CancelledError)):
             raise
-        logger.error(f"Cannot start — configuration error:\n{e}")
+        logger.error(f"Não deu para ligar: erro na configuração:\n{e}")
         return
     env = load_env()
     state = StateManager()
     brain = Brain(state, config.brain)
     logger.info(
-        f"Thinking with {brain.provider_label}"
+        f"Pensando com {brain.provider_label}"
         + (f" ({brain.model})" if brain.model else "")
-        + ". Change brain.provider in harvey.yaml to switch."
+        + ". Para trocar, mude brain.provider no config."
     )
 
     await state.init_db()
-    logger.info("Database initialized.")
+    logger.info("Banco de dados pronto.")
 
     # Import agents here to avoid circular imports
     from harvey.agents.scout import Scout
@@ -209,7 +209,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             # 1. Check quiet hours
             if in_quiet_hours(config):
                 sleep_for = seconds_until_quiet_hours_end(config)
-                logger.info(f"Quiet hours. Sleeping for {sleep_for // 60} minutes.")
+                logger.info(f"Horário de silêncio. Dormindo {sleep_for // 60} minutos.")
                 # Sleep in short polled chunks rather than one multi-hour
                 # wait: found in production that a system sleep/wake cycle
                 # during a long asyncio.wait_for left the process silently
@@ -234,8 +234,8 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             problem = await brain.preflight()
             if problem:
                 logger.error(
-                    f"Mariana is paused: {problem} Nothing was sent or changed. "
-                    f"Re-checking in {config.usage.heartbeat_interval_minutes} minutes."
+                    f"Mariana pausada: {problem} Nada foi enviado nem mudado. "
+                    f"Confiro de novo em {config.usage.heartbeat_interval_minutes} minutos."
                 )
                 if await _interruptible_sleep(interval, stop_event):
                     break
@@ -247,16 +247,16 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
                 max_calls, max_percent=config.usage.max_daily_claude_percent
             ):
                 logger.info(
-                    f"{brain.provider_label} usage limit reached "
-                    f"({config.usage.max_daily_claude_percent}% of quota or "
-                    f"{max_calls} calls). Sleeping 1h, then re-checking."
+                    f"Limite de uso do {brain.provider_label} atingido "
+                    f"({config.usage.max_daily_claude_percent}% da cota ou "
+                    f"{max_calls} chamadas). Dormindo 1h e confiro de novo."
                 )
                 if await _interruptible_sleep(3600, stop_event):
                     break
                 continue
 
             # 4. Decide what to do
-            logger.info("Checking pipeline state...")
+            logger.info("Conferindo o funil...")
             summary = await state.get_state_summary()
             action = await decide_next_action(brain, state, config, summary=summary)
 
@@ -322,10 +322,10 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
                           if n in REPLY_READERS and outcomes.get(n) is not True]
                 paused = brain.paused_reason
                 if paused or unread:
-                    reason = paused or "replies couldn't all be read and handled."
+                    reason = paused or "nem todas as respostas puderam ser lidas e tratadas."
                     logger.error(
-                        f"Not sending this cycle: {reason} Queued emails wait "
-                        "until replies can be read again."
+                        f"Sem envios neste ciclo: {reason} Os emails da fila esperam "
+                        "até as respostas poderem ser lidas de novo."
                     )
                 else:
                     await _run_agents([(name, run()) for name, run in send_tasks])
@@ -334,13 +334,13 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             try:
                 await state.log_action(action_type=action, agent="main")
             except Exception as e:
-                logger.warning(f"Failed to log action '{action}': {e}")
+                logger.warning(f"Não deu para registrar a ação '{action}': {e}")
 
             consecutive_errors = 0
 
             # 7. Sleep until next heartbeat
             logger.info(
-                f"Cycle complete. Sleeping for {config.usage.heartbeat_interval_minutes} minutes."
+                f"Ciclo concluído. Dormindo {config.usage.heartbeat_interval_minutes} minutos."
             )
             if await _interruptible_sleep(interval, stop_event):
                 break
@@ -354,10 +354,10 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
                 ERROR_BACKOFF_CAP,
             )
             logger.error(
-                f"Error in heartbeat (failure #{consecutive_errors}): {e}",
+                f"Erro no ciclo (falha nº {consecutive_errors}): {e}",
                 exc_info=True,
             )
-            logger.info(f"Recovering... sleeping {backoff}s before retry.")
+            logger.info(f"Recuperando... dormindo {backoff}s antes de tentar de novo.")
             if await _interruptible_sleep(backoff, stop_event):
                 break
 
@@ -404,9 +404,9 @@ async def _run_with_signals():
 
     def _request_shutdown(sig_name: str):
         if stop_event.is_set():
-            logger.info("Second shutdown signal — exiting immediately.")
+            logger.info("Segundo pedido para parar: saindo agora.")
             sys.exit(1)
-        logger.info(f"Received {sig_name}. Finishing current work, then shutting down...")
+        logger.info(f"Recebi {sig_name}. Terminando o que estou fazendo e desligando...")
         stop_event.set()
 
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -423,15 +423,15 @@ def main():
     """Entry point."""
     # Check for first-time setup
     if _needs_setup():
-        print("\n  First time running Mariana? Let's get you set up.\n")
-        from harvey.setup import run_setup
-        asyncio.run(run_setup())
+        print("\n  Primeira vez? Antes de tudo, a Mariana precisa te conhecer.\n")
+        from harvey.onboard import run_onboarding
+        asyncio.run(run_onboarding())
         return
 
     try:
         asyncio.run(_run_with_signals())
     except KeyboardInterrupt:
-        logger.info("Goodbye.")
+        logger.info("Até mais.")
 
 
 if __name__ == "__main__":

@@ -23,6 +23,8 @@ import unicodedata
 from datetime import date
 from pathlib import Path
 
+from harvey import market  # noqa: E402
+
 logger = logging.getLogger("harvey.production")
 
 OGAB_CONFIG = Path.home() / ".claude" / "skills" / "ogab" / "config.json"
@@ -81,7 +83,7 @@ def ensure_brand_memory(folder: Path, note: str) -> Path:
 async def extract_production(brain, thread_text: str, briefing: dict, language: str) -> dict:
     prompt = f"""A video job was just closed. From the conversation and the proposal
 briefing, fill the production details. Use ONLY what is written; leave
-unknown fields empty. Write text in {"Brazilian Portuguese" if language.startswith("pt") else "English"}.
+unknown fields empty. Write text in {market.name_for_code(language)}.
 
 PROPOSAL BRIEFING:
 {json.dumps(briefing, ensure_ascii=False)[:4000]}

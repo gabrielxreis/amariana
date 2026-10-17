@@ -96,7 +96,7 @@ class CloudflareCrawler:
             resp = await client.post(self.base_url, json=payload)
 
             if resp.status_code != 200:
-                logger.error(f"Cloudflare crawl start failed: {resp.status_code} {resp.text}")
+                logger.error(f"A leitura pelo Cloudflare não começou: {resp.status_code} {resp.text}")
                 return {}
 
             result = resp.json()
@@ -106,7 +106,7 @@ class CloudflareCrawler:
 
             job_id = result.get("result")
             if not job_id:
-                logger.error("No job ID returned from Cloudflare crawl")
+                logger.error("O Cloudflare não devolveu o ID da leitura")
                 return {}
 
             logger.info(f"Crawl job started: {job_id}")
@@ -128,7 +128,7 @@ class CloudflareCrawler:
             )
 
             if resp.status_code != 200:
-                logger.error(f"Poll failed: {resp.status_code}")
+                logger.error(f"A consulta falhou: {resp.status_code}")
                 break
 
             data = resp.json().get("result", {})
@@ -137,12 +137,12 @@ class CloudflareCrawler:
             finished = data.get("finished", 0)
 
             elapsed = int(time.time() - start_time)
-            print(f"\r      Crawling... {finished}/{total} pages ({elapsed}s)", end="", flush=True)
+            print(f"\r      Lendo... {finished}/{total} páginas ({elapsed}s)", end="", flush=True)
 
             if status in ("completed", "cancelled_due_to_timeout", "cancelled_due_to_limits"):
                 print()  # newline after progress
                 if status != "completed":
-                    logger.warning(f"Crawl ended with status: {status}")
+                    logger.warning(f"A leitura terminou com o status: {status}")
                 break
 
             if status == "errored":
@@ -236,7 +236,7 @@ class FallbackCrawler:
                     continue
 
                 pages[url] = text
-                print(f"\r      Scraped {len(pages)} pages...", end="", flush=True)
+                print(f"\r      {len(pages)} páginas lidas...", end="", flush=True)
 
                 # Discover new links from this page and add to queue
                 if html:
@@ -349,15 +349,15 @@ class Trainer:
         parsed = urlparse(url)
         domain = parsed.netloc
         if not domain:
-            print(f"\nERROR: '{url}' doesn't look like a valid URL.")
-            print("Try something like: https://yourcompany.com")
+            print(f"\nERRO: '{url}' não parece um endereço válido.")
+            print("Tente algo como: https://seusite.com.br")
             return None
         base_url = f"{parsed.scheme}://{domain}"
 
-        logger.info(f"Training Mariana on {base_url}...")
+        logger.info(f"Mariana aprendendo com {base_url}...")
         print(f"\n{'='*60}")
-        print(f"  Mariana Training Mode")
-        print(f"  Learning from: {base_url}")
+        print(f"  Mariana aprendendo pelo site")
+        print(f"  Lendo: {base_url}")
         print(f"{'='*60}\n")
 
         # Step 1: Deep crawl
@@ -365,48 +365,48 @@ class Trainer:
         cf_api_token = os.getenv("CLOUDFLARE_API_TOKEN", "")
 
         if cf_account_id and cf_api_token:
-            print(f"[1/6] Deep crawling with Cloudflare (up to {max_pages} pages)...")
+            print(f"[1/6] Lendo a fundo com o Cloudflare (até {max_pages} páginas)...")
             crawler = CloudflareCrawler(cf_account_id, cf_api_token)
             self.scraped_pages = await crawler.crawl(
                 base_url, max_pages=max_pages, depth=10
             )
         else:
-            print("[1/6] Crawling website (add CLOUDFLARE_ACCOUNT_ID and")
-            print("      CLOUDFLARE_API_TOKEN to .env for deep JS-rendered crawling)...")
+            print("[1/6] Lendo o site (coloque CLOUDFLARE_ACCOUNT_ID e")
+            print("      CLOUDFLARE_API_TOKEN no .env para ler sites com JavaScript)...")
             crawler = FallbackCrawler()
             self.scraped_pages = await crawler.crawl(base_url, max_pages=max_pages)
 
         if not self.scraped_pages:
-            print("\nERROR: Could not scrape any pages. Check the URL.")
+            print("\nERRO: não deu para ler nenhuma página. Confira o endereço.")
             return None
 
-        print(f"      Done! Crawled {len(self.scraped_pages)} pages.\n")
+        print(f"      Pronto! {len(self.scraped_pages)} páginas lidas.\n")
 
         # Step 2: Extract product information
-        print("[2/6] Analyzing product information...")
+        print("[2/6] Entendendo o que você oferece...")
         product_info = await self._extract_product_info()
         if not product_info:
-            print("ERROR: Could not extract product information.")
+            print("ERRO: não deu para entender o que você oferece.")
             return None
-        print(f"      Found: {product_info.get('product_name', 'Unknown Product')}\n")
+        print(f"      Encontrado: {product_info.get('product_name', 'Serviço sem nome')}\n")
 
         # Step 3: Identify ICP
-        print("[3/6] Identifying ideal customer profile...")
+        print("[3/6] Identificando o cliente ideal...")
         icp_info = await self._extract_icp()
-        print(f"      Target: {', '.join(icp_info.get('industries', ['Unknown']))}\n")
+        print(f"      Alvo: {', '.join(icp_info.get('industries', ['Desconhecido']))}\n")
 
         # Step 4: Competitive analysis
-        print("[4/6] Analyzing competitive landscape...")
+        print("[4/6] Olhando a concorrência...")
         competitive_intel = await self._extract_competitive_intel(product_info)
-        print(f"      Identified {len(competitive_intel.get('competitors', []))} competitors.\n")
+        print(f"      {len(competitive_intel.get('competitors', []))} concorrentes identificados.\n")
 
         # Step 5: Generate objection responses
-        print("[5/6] Generating objection handling playbook...")
+        print("[5/6] Preparando respostas a objeções...")
         objections = await self._generate_objections(product_info, competitive_intel)
-        print(f"      Prepared {len(objections)} objection responses.\n")
+        print(f"      {len(objections)} respostas a objeções prontas.\n")
 
         # Step 6: Generate config + skills
-        print("[6/6] Building configuration and product knowledge...")
+        print("[6/6] Montando a configuração e o dossiê...")
         config = self._build_config(product_info, icp_info, objections, domain)
 
         # Write config (relative paths resolve against the project root,
@@ -425,21 +425,21 @@ class Trainer:
             await self._generate_battle_cards(product_info, competitive_intel)
 
         print(f"\n{'='*60}")
-        print(f"  Training complete!")
+        print(f"  Aprendizado concluído!")
         print(f"{'='*60}")
-        print(f"\n  Product:      {config['product']['name']}")
-        print(f"  Company:      {config['persona']['company']}")
-        print(f"  ICP titles:   {', '.join(config['icp']['titles'])}")
-        print(f"  Industries:   {', '.join(config['icp']['industries'])}")
-        print(f"  Pages crawled: {len(self.scraped_pages)}")
-        print(f"\n  Files generated:")
+        print(f"\n  Serviço:      {config['product']['name']}")
+        print(f"  Marca:        {config['persona']['company']}")
+        print(f"  Cargos-alvo:  {', '.join(config['icp']['titles'])}")
+        print(f"  Segmentos:    {', '.join(config['icp']['industries'])}")
+        print(f"  Páginas lidas: {len(self.scraped_pages)}")
+        print(f"\n  Arquivos gerados:")
         print(f"    - {config_path}")
         print(f"    - skills/product_knowledge.md")
         if competitive_intel.get("competitors"):
             print(f"    - skills/competitive_intel.md")
-        print(f"\n  Review {config_path} and adjust as needed — especially the")
-        print(f"  persona name/email, which I guessed from your domain.")
-        print(f"  Then run: mariana run\n")
+        print(f"\n  Confira {config_path} e ajuste o que precisar, principalmente")
+        print(f"  o nome e o email de quem assina. Melhor ainda: rode mariana onboard.")
+        print(f"  Depois: mariana run\n")
 
         return config
 
@@ -669,7 +669,7 @@ Do NOT pursue prospects who:
 
         skills_path = PROJECT_ROOT / "skills" / "product_knowledge.md"
         skills_path.write_text(knowledge)
-        print(f"      Generated: skills/product_knowledge.md")
+        print(f"      Gerado: skills/product_knowledge.md")
 
     async def _generate_battle_cards(self, product_info: dict, competitive_intel: dict):
         """Generate competitive battle cards as a skill file."""
@@ -717,7 +717,7 @@ What prospects do instead of buying a solution like ours:
 
         skills_path = PROJECT_ROOT / "skills" / "competitive_intel.md"
         skills_path.write_text(cards)
-        print(f"      Generated: skills/competitive_intel.md")
+        print(f"      Gerado: skills/competitive_intel.md")
 
     def _build_config(
         self,
@@ -791,18 +791,18 @@ def main():
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: python -m harvey.trainer <website-url> [max-pages]")
+        print("Uso: mariana train <site> [máximo-de-páginas]")
         print("")
-        print("Examples:")
-        print("  python -m harvey.trainer https://acmecorp.com")
-        print("  python -m harvey.trainer https://acmecorp.com 200")
+        print("Exemplos:")
+        print("  mariana train https://seusite.com.br")
+        print("  mariana train https://seusite.com.br 200")
         print("")
-        print("For deep JS-rendered crawling, add to .env:")
-        print("  CLOUDFLARE_ACCOUNT_ID=your_account_id")
-        print("  CLOUDFLARE_API_TOKEN=your_api_token")
+        print("Para ler sites com JavaScript, coloque no .env:")
+        print("  CLOUDFLARE_ACCOUNT_ID=seu_account_id")
+        print("  CLOUDFLARE_API_TOKEN=seu_token")
         print("")
-        print("Without Cloudflare credentials, Mariana will use basic HTTP")
-        print("scraping (no JavaScript rendering, limited page discovery).")
+        print("Sem o Cloudflare, a Mariana usa o leitor HTTP próprio")
+        print("(sem JavaScript, encontra menos páginas).")
         sys.exit(1)
 
     url = _normalize_start_url(sys.argv[1])
@@ -812,7 +812,7 @@ def main():
         try:
             max_pages = max(1, int(sys.argv[2]))
         except ValueError:
-            print(f"Invalid max-pages value: {sys.argv[2]!r} (expected a number)")
+            print(f"Valor inválido para máximo de páginas: {sys.argv[2]!r} (use um número)")
             sys.exit(1)
 
     asyncio.run(run_training(url, max_pages=max_pages))

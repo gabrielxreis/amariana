@@ -24,7 +24,7 @@ import unicodedata
 from datetime import date
 from pathlib import Path
 
-from harvey import portfolio
+from harvey import market, portfolio
 from harvey.paths import PROJECT_ROOT
 
 logger = logging.getLogger("harvey.proposal")
@@ -44,6 +44,16 @@ LABELS = {
            "ref": "Reference", "scope": "Scope", "service": "Service", "price": "Investment",
            "on_request": "on request", "work": "Similar work", "next": "Next steps",
            "valid": "This proposal is valid for 15 days.", "timeline": "Timeline", "total": "Total"},
+    "es": {"title": "Propuesta", "for": "Para", "brief": "Lo que entendí del proyecto",
+           "what": "Proyecto", "when": "Fecha", "where": "Lugar", "usage": "Dónde se usará",
+           "ref": "Referencia", "scope": "Alcance", "service": "Servicio", "price": "Inversión",
+           "on_request": "a consultar", "work": "Trabajos similares", "next": "Próximos pasos",
+           "valid": "Propuesta válida por 15 días.", "timeline": "Plazo", "total": "Total"},
+    "fr": {"title": "Proposition", "for": "Pour", "brief": "Ce que j'ai compris du projet",
+           "what": "Projet", "when": "Date", "where": "Lieu", "usage": "Utilisation",
+           "ref": "Référence", "scope": "Périmètre", "service": "Service", "price": "Investissement",
+           "on_request": "sur demande", "work": "Travaux similaires", "next": "Prochaines étapes",
+           "valid": "Proposition valable 15 jours.", "timeline": "Délai", "total": "Total"},
 }
 
 
@@ -66,7 +76,7 @@ async def extract_briefing(brain, thread_text: str, prospect, company_name: str,
         for s in services if isinstance(s, dict) and s.get("name")) or "(no catalog)"
     prompt = f"""Read this conversation between an audiovisual professional and a
 potential client and prepare the data for a proposal. Write every text field
-in {"Brazilian Portuguese" if language.startswith("pt") else "American English"}.
+in {market.name_for_code(language)}.
 Use ONLY what the conversation says; leave unknown fields empty.
 
 Client: {prospect.full_name()} at {company_name}
@@ -91,7 +101,7 @@ Return JSON:
 
 def render_html(briefing: dict, profile: dict, sig: dict, client: str, contact: str,
                 language: str) -> str:
-    L = LABELS["pt-BR" if language.startswith("pt") else "en"]
+    L = LABELS.get(language) or LABELS.get(language.split("-")[0]) or (LABELS["pt-BR"] if language.startswith("pt") else LABELS["en"])
     esc = lambda v: html.escape(str(v or ""))  # noqa: E731
     accent = esc(sig.get("accent_color") or "#111111")
     person = profile.get("person", {})
@@ -159,8 +169,8 @@ async def to_pdf(html_path: Path) -> Path | None:
             await page.pdf(path=str(pdf_path), format="A4", print_background=True)
             await browser.close()
             return pdf_path
-    logger.info("proposal: no Chrome/Chromium for PDF; kept HTML "
-                "(install with: playwright install chromium)")
+    logger.info("proposta: sem Chrome/Chromium para o PDF; ficou em HTML "
+                "(instale com: playwright install chromium)")
     return None
 
 

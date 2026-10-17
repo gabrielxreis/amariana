@@ -1,5 +1,12 @@
 # Mudanças da Mariana
 
+## 0.4.0 (17/10/2026)
+- Tudo em português: painel, terminal, documentação, prompts, base de conhecimento e registros
+- Cada mensagem sai no idioma do país da empresa (pelo DDI, domínio e cidade): português, espanhol, inglês, francês, alemão, italiano...
+- Propostas também em espanhol e francês; horários da agenda em espanhol e francês; radar de eventos busca em espanhol
+- Lotes de email separados por idioma; Números por país
+- O primeiro `mariana run` abre o onboarding
+
 ## 0.3.0 (16/10/2026)
 - Sugestão de preço pelo histórico de jobs fechados (marcada para conferir na proposta)
 - Follow-up de proposta: lembrete leve após 3 dias e outro após mais 5, se não houver resposta

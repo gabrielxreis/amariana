@@ -24,10 +24,10 @@ def _check_python_version():
 
     have = f"{sys.version_info.major}.{sys.version_info.minor}"
     want = f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}"
-    print(f"\n  Mariana needs Python {want} or newer. This is Python {have}.")
+    print(f"\n  A Mariana precisa do Python {want} ou mais novo. Este é o Python {have}.")
     print(f"  ({sys.executable})\n")
-    print("  On macOS, `python3` is usually the system 3.9, so a venv built")
-    print("  with it is 3.9 too. Build the venv from a newer Python instead:\n")
+    print("  No macOS, o `python3` costuma ser o 3.9 do sistema, então o ambiente")
+    print("  criado com ele também é 3.9. Crie o ambiente com um Python mais novo:\n")
     print("    brew install python@3.13")
     print("    rm -rf .venv")
     print("    $(brew --prefix)/bin/python3.13 -m venv .venv")
@@ -38,10 +38,10 @@ def _check_python_version():
 def cmd_install(args):
     """Install all dependencies including Playwright browsers."""
     _check_python_version()
-    print("\n  Installing Mariana dependencies...\n")
+    print("\n  Instalando as dependências da Mariana...\n")
 
     # Install Python packages
-    print("  [1/2] Installing Python packages...")
+    print("  [1/2] Instalando os pacotes Python...")
     requirements = Path(args._project_root) / "requirements.txt"
     if requirements.exists():
         pip_args = ["-r", "requirements.txt"]
@@ -53,14 +53,14 @@ def cmd_install(args):
         cwd=args._project_root,
     )
     if result.returncode != 0:
-        print("\n  Failed to install Python packages.")
-        print("  Tip: make sure you're inside a virtualenv "
+        print("\n  Não deu para instalar os pacotes Python.")
+        print("  Dica: confira se está dentro de um ambiente virtual "
               "(python3 -m venv .venv && source .venv/bin/activate).")
         sys.exit(1)
-    print("  ✓ Python packages installed.\n")
+    print("  ✓ Pacotes Python instalados.\n")
 
     # Install Playwright browsers
-    print("  [2/2] Installing Playwright browsers...")
+    print("  [2/2] Instalando o navegador do Playwright...")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "playwright", "install", "chromium"],
@@ -70,12 +70,12 @@ def cmd_install(args):
     except (subprocess.TimeoutExpired, OSError):
         playwright_ok = False
     if not playwright_ok:
-        print("\n  Playwright browser install failed (optional — needed for LinkedIn).")
+        print("\n  Não deu para instalar o navegador do Playwright (opcional: usado no PDF das propostas sem Chrome).")
     else:
-        print("  ✓ Playwright browsers installed.\n")
+        print("  ✓ Navegador do Playwright instalado.\n")
 
     _ensure_importable(args._project_root)
-    print("  Mariana is installed. Run 'mariana setup' next.\n")
+    print("  Mariana instalada. Agora rode 'mariana onboard'.\n")
 
 
 def _ensure_importable(project_root: str):
@@ -106,14 +106,14 @@ def _ensure_importable(project_root: str):
                 cwd="/", capture_output=True,
             )
             if recheck.returncode == 0:
-                print("  ✓ Fixed package visibility (editable .pth was being "
-                      "ignored; linked the package directly).\n")
+                print("  ✓ Corrigido: o pacote não estava visível (o .pth era "
+                      "ignorado; liguei o pacote direto).\n")
                 return
     except OSError as e:
-        print(f"  Could not apply import fix: {e}")
+        print(f"  Não deu para aplicar a correção: {e}")
 
-    print("\n  Warning: 'import harvey' fails outside the project directory.")
-    print("  Run harvey commands from the project root, or reinstall with:")
+    print("\n  Atenção: o pacote não carrega fora da pasta do projeto.")
+    print("  Rode os comandos na pasta do projeto, ou reinstale com:")
     print("    pip install -e . --config-settings editable_mode=compat\n")
 
 
@@ -138,10 +138,10 @@ def cmd_train(args):
     url = args.url.strip()
     if not url.startswith(("http://", "https://")):
         url = f"https://{url}"
-        print(f"  No scheme given — using {url}")
+        print(f"  Sem http/https: usando {url}")
 
     if args.max_pages < 1:
-        print("  max_pages must be at least 1.")
+        print("  max_pages precisa ser pelo menos 1.")
         sys.exit(2)
 
     from pydantic import ValidationError
@@ -175,7 +175,7 @@ def cmd_dashboard(args):
     from harvey.dashboard import start_dashboard
 
     if not 1 <= args.port <= 65535:
-        print(f"  Invalid port: {args.port}. Must be 1-65535.")
+        print(f"  Porta inválida: {args.port}. Use de 1 a 65535.")
         sys.exit(2)
 
     start_dashboard(host=args.host, port=args.port)
@@ -190,15 +190,15 @@ def cmd_status(args):
         await state.init_db()
         summary = await state.get_state_summary()
 
-        print("\n  Mariana Pipeline Status")
+        print("\n  Resumo do funil da Mariana")
         print("  " + "=" * 40)
-        print(f"  Prospects:            {summary['prospects']}")
-        print(f"  Draft campaigns:      {summary['draft_campaigns']}")
-        print(f"  Active campaigns:     {summary['active_campaigns']}")
-        print(f"  Open conversations:   {summary['open_conversations']}")
+        print(f"  Leads:                {summary['prospects']}")
+        print(f"  Campanhas rascunho:   {summary['draft_campaigns']}")
+        print(f"  Campanhas ativas:     {summary['active_campaigns']}")
+        print(f"  Conversas abertas:    {summary['open_conversations']}")
         by_provider = summary.get("usage_today_by_provider", {})
-        print(f"  Claude calls today:   {by_provider.get('claude', summary['usage_today'])}")
-        print(f"  Codex calls today:    {by_provider.get('codex', 0)}")
+        print(f"  Chamadas Claude hoje: {by_provider.get('claude', summary['usage_today'])}")
+        print(f"  Chamadas Codex hoje:  {by_provider.get('codex', 0)}")
         from harvey.brain import BRAIN_STATUS_KEY, Brain, active_brain_status
         from harvey.config import ConfigError, load_brain_config
         try:
@@ -213,7 +213,7 @@ def cmd_status(args):
         healthy = True
         if getattr(args, "check", False):
             if brain_config is None:
-                print(f"  Brain:                config error: {config_error}")
+                print(f"  Cérebro:              erro no config: {config_error}")
                 healthy = False
             else:
                 brain = Brain(state, brain_config)
@@ -221,17 +221,17 @@ def cmd_status(args):
                 label = brain.provider_label + (f" ({brain.model})" if brain.model else "")
                 if problem:
                     healthy = False
-                    print(f"  Brain:                {label} NOT READY")
+                    print(f"  Cérebro:              {label} NÃO ESTÁ PRONTO")
                     print(f"                        {problem}")
                 elif brain.provider == "codex":
-                    print(f"  Brain:                {label} ready (CLI, isolation, login, "
-                          "model and account checked; no prompt sent)")
+                    print(f"  Cérebro:              {label} pronto (CLI, isolamento, login, "
+                          "modelo e conta conferidos; nenhum prompt enviado)")
                 else:
-                    print(f"  Brain:                {label} (not checked: Claude is checked "
-                          "by its first call)")
+                    print(f"  Cérebro:              {label} (não conferido: o Claude é conferido "
+                          "na primeira chamada)")
         elif brain_status.get("status") == "paused":
             label = {"claude": "Claude", "codex": "Codex"}.get(brain_status.get("provider"), "Brain")
-            print(f"  Brain:                {label} PAUSED since {brain_status.get('since', '?')}")
+            print(f"  Cérebro:              {label} PAUSADO desde {brain_status.get('since', '?')}")
             print(f"                        {brain_status.get('reason', '')}")
         print()
         return healthy
@@ -272,24 +272,24 @@ def cmd_usage(args):
         except Exception:
             pass
 
-        label = {"claude": "Claude", "codex": "Codex"}.get(provider, "Brain")
-        print(f"\n  {label} Usage")
+        label = {"claude": "Claude", "codex": "Codex"}.get(provider, "Cérebro")
+        print(f"\n  Uso do {label}")
         print("  " + "=" * 52)
         if windows:
-            labels = {"five_hour": "5-hour window", "seven_day": "Weekly",
-                      "limit_reached": "Usage limit"}
+            labels = {"five_hour": "Janela de 5h", "seven_day": "Semanal",
+                      "limit_reached": "Limite de uso"}
             for key, w in windows.items():
-                resets = f"  (resets {w['resets_at']})" if w.get("resets_at") else ""
-                print(f"  {labels.get(key, key):<16} {w['utilization']:5.1f}% used{resets}")
+                resets = f"  (renova {w['resets_at']})" if w.get("resets_at") else ""
+                print(f"  {labels.get(key, key):<16} {w['utilization']:5.1f}% usado{resets}")
         elif provider == "codex":
-            print("  Quota gauge unavailable (check 'codex login', the Codex CLI "
-                  "version, and network).")
+            print("  Cota indisponível (confira o 'codex login', a versão do Codex CLI "
+                  "e a rede).")
         elif provider == "claude":
-            print("  Quota gauge unavailable (run 'claude login' or check network).")
+            print("  Cota indisponível (rode 'claude login' ou confira a rede).")
 
         totals = await state.usage_totals()
         print()
-        print(f"  {'Period':<10} {'Calls':>7} {'Input':>12} {'Output':>10} {'Cache read':>12}")
+        print(f"  {'Período':<10} {'Chamadas':>8} {'Entrada':>11} {'Saída':>10} {'Cache':>12}")
         for label, key in (("Today", "today"), ("7 days", "week"), ("30 days", "month")):
             t = totals.get(key) or {}
             print(
@@ -300,7 +300,7 @@ def cmd_usage(args):
 
         by_provider = await state.usage_by_provider(days=args.days)
         if len(by_provider) > 1 or (by_provider and by_provider[0]["provider"] != "claude"):
-            print(f"\n  By provider (last {args.days} days):")
+            print(f"\n  Por provedor (últimos {args.days} dias):")
             for row in by_provider:
                 print(
                     f"    {row['provider']:<14} {row['calls']:>5} calls  "
@@ -309,7 +309,7 @@ def cmd_usage(args):
 
         by_agent = await state.usage_by_agent(days=args.days)
         if by_agent:
-            print(f"\n  By agent (last {args.days} days):")
+            print(f"\n  Por agente (últimos {args.days} dias):")
             for row in by_agent:
                 print(
                     f"    {row['agent']:<14} {row['calls']:>5} calls  "
@@ -318,15 +318,15 @@ def cmd_usage(args):
 
         by_task = await state.usage_by_task(days=args.days)
         if by_task:
-            print(f"\n  By task (last {args.days} days):")
+            print(f"\n  Por tarefa (últimos {args.days} dias):")
             for row in by_task[:10]:
                 print(
                     f"    {row['task']:<22} {row['calls']:>5} calls  "
                     f"{row['output_tokens']:>10,} out tokens"
                 )
         print(
-            "\n  Subscription plans aren't billed per token — these are usage"
-            "\n  counts, not costs.\n"
+            "\n  Assinatura não cobra por token: isto é contagem de uso,"
+            "\n  não custo.\n"
         )
 
     asyncio.run(_usage())
@@ -356,16 +356,16 @@ def cmd_export(args):
             statuses=statuses,
             include_all=args.all,
         )
-        scope = "all prospects" if args.all else (
-            f"email status {email_statuses or ['verified', 'risky']}"
-            + (f", score >= {args.min_score}" if args.min_score else "")
+        scope = "todos os leads" if args.all else (
+            f"status de email {email_statuses or ['verified', 'risky']}"
+            + (f", nota >= {args.min_score}" if args.min_score else "")
         )
-        print(f"\n  Exported {count} prospect(s) to {args.out}  ({scope})")
+        print(f"\n  {count} lead(s) exportado(s) para {args.out}  ({scope})")
         if count == 0 and not args.all:
-            print("  Tip: no deliverable emails yet? Add a REOON_API_KEY to .env so")
-            print("  Mariana can verify addresses, or use --all for the raw list.\n")
+            print("  Dica: nenhum email entregável ainda? Coloque uma REOON_API_KEY no .env")
+            print("  para a Mariana verificar os endereços, ou use --all para a lista crua.\n")
         else:
-            print("  The CSV imports directly into Instantly, Smartlead, or any sequencer.\n")
+            print("  O CSV entra direto no Instantly, Smartlead ou qualquer ferramenta de sequência.\n")
 
     asyncio.run(_export())
 
@@ -424,39 +424,39 @@ def cmd_outbox(args):
 
         if args.approve_all:
             n = await state.approve_outbox()
-            print(f"\n  Approved {n} email(s). They'll send on schedule.\n")
+            print(f"\n  {n} email(s) aprovado(s). Saem no horário agendado.\n")
             return
         if args.approve:
             n = await state.approve_outbox(args.approve)
-            print(f"\n  {'Approved.' if n else 'No pending item with that id.'}\n")
+            print(f"\n  {'Aprovado.' if n else 'Nenhum item pendente com esse id.'}\n")
             return
         if args.reject:
             await state.update_outbox_item(args.reject, status="rejected")
-            print("\n  Rejected.\n")
+            print("\n  Recusado.\n")
             return
 
         paused = await state.get_setting("sending_paused")
         if paused:
-            print(f"\n  ⚠ SENDING PAUSED: {paused}")
-            print("  Resume with: mariana sending resume")
+            print(f"\n  ⚠ ENVIOS PAUSADOS: {paused}")
+            print("  Retome com: mariana sending resume")
 
         pending = await state.get_outbox(status="pending_review", limit=50)
         approved = await state.get_outbox(status="approved", limit=10)
-        print(f"\n  Outbox — {len(pending)} awaiting approval, "
-              f"{len(approved)}+ approved/scheduled")
+        print(f"\n  Outbox: {len(pending)} esperando aprovação, "
+              f"{len(approved)}+ aprovados/agendados")
         print("  " + "=" * 60)
         for item in pending:
-            print(f"\n  [{item['id']}] step {item['step']} ({item['kind']}) "
-                  f"→ {item['to_email']}  (send {item['send_at'][:16]})")
-            print(f"  Subject: {item['subject']}")
+            print(f"\n  [{item['id']}] etapa {item['step']} ({item['kind']}) "
+                  f"→ {item['to_email']}  (sai em {item['send_at'][:16]})")
+            print(f"  Assunto: {item['subject']}")
             body_preview = (item["body"][:200] + "...") if len(item["body"]) > 200 else item["body"]
             for line in body_preview.splitlines():
                 print(f"    {line}")
         if pending:
-            print("\n  Approve: mariana outbox --approve <id>   |   all: mariana outbox --approve-all")
-            print("  Reject:  mariana outbox --reject <id>\n")
+            print("\n  Aprovar: mariana outbox --approve <id>   |   todos: mariana outbox --approve-all")
+            print("  Recusar: mariana outbox --reject <id>\n")
         else:
-            print("  Nothing awaiting review.\n")
+            print("  Nada esperando revisão.\n")
 
     asyncio.run(_outbox())
 
@@ -472,16 +472,16 @@ def cmd_profile(args):
 
         pending = await state.count_companies_needing_profile(args.stale_days)
         if not pending:
-            print("\n  Nothing to profile. Every company with a website has "
-                  "been read recently.\n")
+            print("\n  Nada para ler. Toda empresa com site foi lida "
+                  "recentemente.\n")
             return
 
-        print(f"\n  {pending} companies need profiling. Reading up to "
+        print(f"\n  {pending} empresas para ler. Lendo até "
               f"{args.limit}...\n")
         companies, observations, _ = await run_profile_stage(
             state, limit=args.limit, stale_days=args.stale_days)
-        print(f"  Read {companies} sites → {observations} observations (free)")
-        print("\n  See what turned up: mariana dashboard → Signals\n")
+        print(f"  {companies} sites lidos → {observations} observações (grátis)")
+        print("\n  Veja o resultado: mariana dashboard → Sinais\n")
 
     asyncio.run(_profile())
 
@@ -496,24 +496,24 @@ def cmd_discover(args):
 
     async def _discover():
         if args.providers:
-            print("\n  Discovery providers")
+            print("\n  Fontes de busca")
             print("  " + "=" * 68)
             for m in provider_menu():
                 mark = "ready" if m["configured"] else "needs setup"
                 print(f"\n  {m['label']}  [{m['key']}]  ({mark})")
                 print(f"    {m['blurb']}")
-                print(f"    Cost: {m['cost_note']}")
-                print(f"    Free: {m['free_tier']}")
+                print(f"    Custo: {m['cost_note']}")
+                print(f"    Grátis: {m['free_tier']}")
                 if m["env_keys"]:
-                    print(f"    Needs: {', '.join(m['env_keys'])} in .env  —  {m['signup_url']}")
+                    print(f"    Precisa: {', '.join(m['env_keys'])} no .env  ({m['signup_url']})")
                 if m["caveat"]:
-                    print(f"    Note: {m['caveat']}")
-            print("\n  Run one with: mariana discover --provider <key> --estimate\n")
+                    print(f"    Obs.: {m['caveat']}")
+            print("\n  Rode uma com: mariana discover --provider <fonte> --estimate\n")
             return
 
         if args.provider not in PROVIDERS:
-            print(f"\n  Unknown provider {args.provider!r}. "
-                  f"See: mariana discover --providers\n")
+            print(f"\n  Fonte desconhecida: {args.provider!r}. "
+                  f"Veja: mariana discover --providers\n")
             return
 
         config = load_config()
@@ -527,20 +527,20 @@ def cmd_discover(args):
 
         report = await run_discovery(state, config, args.provider, queries,
                                      max_spend=args.max_spend, dry_run=True)
-        print(f"\n  {len(queries)} queries via {PROVIDERS[args.provider].label}")
+        print(f"\n  {len(queries)} buscas via {PROVIDERS[args.provider].label}")
         for q in queries[:8]:
             print(f"    - {q.keyword()}" + ("" if q.coordinate else
-                  "   (no coordinates — add icp.geo_coordinates for radius search)"))
+                  "   (sem coordenadas: coloque icp.geo_coordinates para buscar por raio)"))
         if len(queries) > 8:
-            print(f"    ... and {len(queries) - 8} more")
-        print(f"\n  Estimated cost: ${report.estimated_cost:.4f}"
-              f"   (cap: ${args.max_spend:.2f})")
+            print(f"    ... e mais {len(queries) - 8}")
+        print(f"\n  Custo estimado: US$ {report.estimated_cost:.4f}"
+              f"   (teto: US$ {args.max_spend:.2f})")
 
         if args.estimate:
-            print("\n  Estimate only. Re-run without --estimate to collect.\n")
+            print("\n  Só estimativa. Rode sem --estimate para coletar.\n")
             return
 
-        print("\n  Running...\n")
+        print("\n  Rodando...\n")
         from harvey.pipeline import run_prospecting
 
         result = await run_prospecting(
@@ -548,25 +548,25 @@ def cmd_discover(args):
             max_spend=args.max_spend, profile=not args.no_profile,
         )
         r = result.discover or {}
-        print(f"  DISCOVER — {r.get('found', 0)} results across "
-              f"{r.get('queries', 0)} queries")
-        print(f"    {r.get('new_companies', 0)} new companies, "
-              f"{r.get('known_companies', 0)} already known")
-        print(f"    {r.get('junk', 0)} filtered out as directories/aggregators")
-        print(f"    {r.get('observations', 0)} observations recorded")
-        print(f"    actual cost: ${r.get('actual_cost', 0):.4f}")
+        print(f"  BUSCA: {r.get('found', 0)} resultados em "
+              f"{r.get('queries', 0)} buscas")
+        print(f"    {r.get('new_companies', 0)} empresas novas, "
+              f"{r.get('known_companies', 0)} já conhecidas")
+        print(f"    {r.get('junk', 0)} descartadas (diretórios/agregadores)")
+        print(f"    {r.get('observations', 0)} observações registradas")
+        print(f"    custo real: US$ {r.get('actual_cost', 0):.4f}")
         if r.get("stopped"):
-            print(f"    stopped early: {r['stopped']}")
+            print(f"    parou antes: {r['stopped']}")
 
         if args.no_profile:
-            print("\n  PROFILE — skipped (--no-profile)")
+            print("\n  LEITURA: pulada (--no-profile)")
         else:
-            print(f"\n  PROFILE — {result.profiled_companies} sites read, "
-                  f"{result.profile_observations} observations  (free)")
+            print(f"\n  LEITURA: {result.profiled_companies} sites lidos, "
+                  f"{result.profile_observations} observações  (grátis)")
 
         for err in result.errors[:5]:
             print(f"    ! {err}")
-        print("\n  Next: mariana dashboard → Signals → cohort builder\n")
+        print("\n  Próximo: mariana dashboard → Sinais → construtor de público\n")
 
     asyncio.run(_discover())
 
@@ -600,7 +600,7 @@ def cmd_signals(args):
             changed = sum(
                 [1 for c in codes if await state.set_signal_status(c, status)]
             )
-            print(f"\n  {changed} signal(s) {status}.\n")
+            print(f"\n  {changed} sinal(is) {'confirmado(s)' if status == 'confirmed' else 'desligado(s)'}.\n")
             return
 
         rows = await state.get_signal_codes()
@@ -609,25 +609,25 @@ def cmd_signals(args):
         for r in rows:
             by_status[r["status"]] = by_status.get(r["status"], 0) + 1
 
-        print(f"\n  Signals — {by_status['confirmed']} confirmed, "
-              f"{by_status['proposed']} awaiting you, {by_status['rejected']} off")
+        print(f"\n  Sinais: {by_status['confirmed']} confirmados, "
+              f"{by_status['proposed']} esperando você, {by_status['rejected']} desligados")
         print("  " + "=" * 66)
-        mark = {"confirmed": "[on] ", "proposed": "[ ? ]", "rejected": "[off]"}
+        mark = {"confirmed": "[sim]", "proposed": "[ ? ]", "rejected": "[não]"}
         current = None
         for r in rows:
             if r["category"] != current:
                 current = r["category"]
                 print(f"\n  {current.upper()}")
             seen = counts.get(r["code"], {}).get("companies", 0)
-            seen_txt = f"  ({seen} companies)" if seen else ""
+            seen_txt = f"  ({seen} empresas)" if seen else ""
             print(f"    {mark.get(r['status'], '     ')} {r['code']:<22} "
                   f"{r['label']}{seen_txt}")
             print(f"          {r['cost_note']}")
 
         if by_status["proposed"]:
-            print("\n  Confirm with: mariana signals --confirm CODE[,CODE...]")
-            print("  Everything free: mariana signals --confirm free")
-            print("  Details and descriptions: mariana dashboard → Signals\n")
+            print("\n  Confirme com: mariana signals --confirm CÓDIGO[,CÓDIGO...]")
+            print("  Tudo o que é grátis: mariana signals --confirm free")
+            print("  Detalhes e descrições: mariana dashboard → Sinais\n")
         else:
             print("")
 
@@ -643,14 +643,14 @@ def cmd_sending(args):
         await state.init_db()
         if args.sending_action == "pause":
             await state.set_setting("sending_paused", "paused manually")
-            print("\n  Sending paused. Nothing will leave the outbox.\n")
+            print("\n  Envios pausados. Nada sai da Outbox.\n")
         elif args.sending_action == "resume":
             await state.set_setting("sending_paused", "")
             await state.set_setting("bounce_count", "0")
-            print("\n  Sending resumed (bounce counter reset).\n")
+            print("\n  Envios retomados (contador de bounce zerado).\n")
         else:
             paused = await state.get_setting("sending_paused")
-            print(f"\n  Sending: {'PAUSED — ' + paused if paused else 'active'}\n")
+            print(f"\n  Envios: {'PAUSADOS: ' + paused if paused else 'ativos'}\n")
 
     asyncio.run(_run())
 
@@ -666,131 +666,131 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
 
     # mariana install
-    sub = subparsers.add_parser("install", help="Install dependencies")
+    sub = subparsers.add_parser("install", help="Instalar dependências")
     sub.set_defaults(func=cmd_install)
 
     # mariana setup
-    sub = subparsers.add_parser("setup", help="Run the interactive setup wizard")
+    sub = subparsers.add_parser("setup", help="Assistente de configuração (o onboard é o recomendado)")
     sub.set_defaults(func=cmd_setup)
 
     # mariana run
-    sub = subparsers.add_parser("run", help="Start Mariana's heartbeat loop")
+    sub = subparsers.add_parser("run", help="Ligar o ciclo da Mariana")
     sub.set_defaults(func=cmd_run)
 
     # mariana train <url>
-    sub = subparsers.add_parser("train", help="Train Mariana on a website")
-    sub.add_argument("url", help="Website URL to crawl and learn from")
+    sub = subparsers.add_parser("train", help="Aprender um produto a partir de um site")
+    sub.add_argument("url", help="Endereço do site para ler e aprender")
     sub.add_argument(
         "max_pages",
         nargs="?",
         type=int,
         default=100,
-        help="Max pages to crawl (default: 100)",
+        help="Máximo de páginas a ler (padrão: 100)",
     )
     sub.add_argument(
         "--provider", choices=["claude", "codex"], default=None,
-        help="Subscription to think with (default: the one in your config, else claude)",
+        help="Assinatura usada para pensar (padrão: a do config, senão claude)",
     )
-    sub.add_argument("--model", default=None, help="Model for this provider (default: provider default)")
+    sub.add_argument("--model", default=None, help="Modelo deste provedor (padrão: o do provedor)")
     sub.add_argument(
         "--reasoning-effort", default=None,
-        help="Codex reasoning effort (minimal/low/medium/high/xhigh)",
+        help="Esforço de raciocínio do Codex (minimal/low/medium/high/xhigh)",
     )
     sub.set_defaults(func=cmd_train)
 
     # mariana dashboard
-    sub = subparsers.add_parser("dashboard", help="Open the web dashboard")
-    sub.add_argument("--host", default="127.0.0.1", help="Host (default: 127.0.0.1)")
-    sub.add_argument("--port", type=int, default=5555, help="Port (default: 5555)")
+    sub = subparsers.add_parser("dashboard", help="Abrir o painel")
+    sub.add_argument("--host", default="127.0.0.1", help="Endereço (padrão: 127.0.0.1)")
+    sub.add_argument("--port", type=int, default=5555, help="Porta (padrão: 5555)")
     sub.set_defaults(func=cmd_dashboard)
 
     # mariana status
-    sub = subparsers.add_parser("status", help="Show pipeline status")
+    sub = subparsers.add_parser("status", help="Mostrar o resumo do funil")
     sub.add_argument(
         "--check", action="store_true",
-        help="Also check the configured brain now (Codex: CLI version, isolation "
-             "and login; no model call)",
+        help="Também testar o cérebro configurado agora (Codex: versão, isolamento "
+             "e login; sem chamar o modelo)",
     )
     sub.set_defaults(func=cmd_status)
 
     # mariana export
     sub = subparsers.add_parser(
-        "export", help="Export prospects as a sequencer-ready CSV"
+        "export", help="Exportar leads em CSV"
     )
-    sub.add_argument("--out", default="prospects.csv", help="Output file (default: prospects.csv)")
+    sub.add_argument("--out", default="prospects.csv", help="Arquivo de saída (padrão: prospects.csv)")
     sub.add_argument(
         "--email-status", default="",
-        help="Comma-separated statuses to include (default: verified,risky)",
+        help="Status de email a incluir, separados por vírgula (padrão: verified,risky)",
     )
-    sub.add_argument("--min-score", type=int, default=0, help="Minimum ICP score")
-    sub.add_argument("--status", default="", help="Comma-separated pipeline statuses (e.g. new,queued)")
-    sub.add_argument("--all", action="store_true", help="Export everything, no filters")
+    sub.add_argument("--min-score", type=int, default=0, help="Nota mínima de perfil")
+    sub.add_argument("--status", default="", help="Status do funil, separados por vírgula (ex.: new,queued)")
+    sub.add_argument("--all", action="store_true", help="Exportar tudo, sem filtro")
     sub.set_defaults(func=cmd_export)
 
     # mariana gmail auth|test
-    sub = subparsers.add_parser("gmail", help="Gmail provider setup")
+    sub = subparsers.add_parser("gmail", help="Conectar o Gmail (e o Google Agenda)")
     sub.add_argument("gmail_action", choices=["auth", "test"],
-                     help="auth: one-time OAuth; test: verify connection")
+                     help="auth: conectar uma vez; test: conferir a conexão")
     sub.set_defaults(func=cmd_gmail)
 
     # mariana microsoft auth|test
-    sub = subparsers.add_parser("microsoft", help="Microsoft 365 provider setup")
+    sub = subparsers.add_parser("microsoft", help="Conectar o Microsoft 365")
     sub.add_argument("microsoft_action", choices=["auth", "test"],
-                     help="auth: one-time sign-in; test: verify connection")
+                     help="auth: entrar uma vez; test: conferir a conexão")
     sub.set_defaults(func=cmd_microsoft)
 
     # mariana outbox
-    sub = subparsers.add_parser("outbox", help="Review/approve queued emails")
-    sub.add_argument("--approve", metavar="ID", default="", help="Approve one item")
-    sub.add_argument("--approve-all", action="store_true", help="Approve all pending")
-    sub.add_argument("--reject", metavar="ID", default="", help="Reject one item")
+    sub = subparsers.add_parser("outbox", help="Revisar e aprovar emails na fila")
+    sub.add_argument("--approve", metavar="ID", default="", help="Aprovar um item")
+    sub.add_argument("--approve-all", action="store_true", help="Aprovar todos os pendentes")
+    sub.add_argument("--reject", metavar="ID", default="", help="Recusar um item")
     sub.set_defaults(func=cmd_outbox)
 
     # mariana sending pause|resume|status
-    sub = subparsers.add_parser("discover", help="Find businesses matching your ICP")
+    sub = subparsers.add_parser("discover", help="Encontrar empresas do seu perfil de cliente")
     sub.add_argument("--provider", default="osm",
-                     help="Discovery provider (default: osm — free, no account)")
+                     help="Fonte de busca (padrão: osm, grátis e sem conta)")
     sub.add_argument("--providers", action="store_true",
-                     help="List every provider with cost and setup, then exit")
+                     help="Listar as fontes com custo e configuração e sair")
     sub.add_argument("--estimate", action="store_true",
-                     help="Print projected spend and exit without calling anything")
+                     help="Mostrar o gasto estimado e sair sem chamar nada")
     sub.add_argument("--city", default="",
                      help='Semicolon-separated cities, e.g. "Denver, CO;Dallas, TX" '
                           '(default: icp.geography)')
     sub.add_argument("--depth", type=int, default=30,
-                     help="SERP depth (default: 30 — depth 100 costs 10x since Sept 2025)")
+                     help="Profundidade da busca (padrão: 30; 100 custa 10x desde set/2025)")
     sub.add_argument("--limit", type=int, default=100,
-                     help="Max records per query (default: 100)")
+                     help="Máximo de resultados por busca (padrão: 100)")
     sub.add_argument("--max-spend", type=float, default=1.0,
-                     help="Hard cap in dollars (default: 1.00)")
+                     help="Teto de gasto em dólares (padrão: 1.00)")
     sub.add_argument("--no-profile", action="store_true",
-                     help="Don't profile what was found (profiling is free)")
+                     help="Não ler os sites encontrados (ler é grátis)")
     sub.set_defaults(func=cmd_discover)
 
     sub = subparsers.add_parser(
-        "profile", help="Read discovered companies' websites (free, no Claude)")
+        "profile", help="Ler os sites das empresas encontradas (grátis, sem IA)")
     sub.add_argument("--limit", type=int, default=200,
-                     help="Max sites to read (default: 200)")
+                     help="Máximo de sites a ler (padrão: 200)")
     sub.add_argument("--stale-days", type=int, default=90,
-                     help="Re-read a site after this many days (default: 90)")
+                     help="Reler um site depois de tantos dias (padrão: 90)")
     sub.set_defaults(func=cmd_profile)
 
     sub = subparsers.add_parser(
-        "signals", help="Review/confirm which signals Mariana prospects against")
+        "signals", help="Revisar e confirmar os sinais que a Mariana procura")
     sub.add_argument("--confirm", metavar="CODES", default="",
-                     help="Comma-separated codes to confirm ('all' or 'free' accepted)")
+                     help="Códigos a confirmar, separados por vírgula (aceita 'all' ou 'free')")
     sub.add_argument("--reject", metavar="CODES", default="",
-                     help="Comma-separated codes to turn off")
+                     help="Códigos a desligar, separados por vírgula")
     sub.set_defaults(func=cmd_signals)
 
-    sub = subparsers.add_parser("sending", help="Kill switch: pause/resume sending")
+    sub = subparsers.add_parser("sending", help="Botão de pânico: pausar/retomar envios")
     sub.add_argument("sending_action", nargs="?", default="status",
                      choices=["pause", "resume", "status"])
     sub.set_defaults(func=cmd_sending)
 
     # mariana usage
-    sub = subparsers.add_parser("usage", help="Show brain usage and quota (Claude or Codex)")
-    sub.add_argument("--days", type=int, default=30, help="Breakdown window (default: 30)")
+    sub = subparsers.add_parser("usage", help="Mostrar uso e cota da assinatura (Claude ou Codex)")
+    sub.add_argument("--days", type=int, default=30, help="Janela em dias (padrão: 30)")
     sub.set_defaults(func=cmd_usage)
 
     # Mariana: onboarding, signature, email and WhatsApp checks
@@ -814,7 +814,7 @@ def main():
     try:
         args.func(args)
     except KeyboardInterrupt:
-        print("\n  Interrupted. Goodbye.")
+        print("\n  Interrompido. Até mais.")
         sys.exit(130)
     except Exception as e:
         # ConfigError and friends carry actionable messages — show them
@@ -822,9 +822,9 @@ def main():
         from harvey.config import ConfigError
 
         if isinstance(e, ConfigError):
-            print(f"\n  Configuration problem:\n  {e}\n")
+            print(f"\n  Problema na configuração:\n  {e}\n")
         else:
-            print(f"\n  Error running 'harvey {args.command}': {e}\n")
+            print(f"\n  Erro ao rodar 'mariana {args.command}': {e}\n")
         sys.exit(1)
 
 

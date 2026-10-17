@@ -78,17 +78,17 @@ class Sender:
     async def run(self):
         """Deploy campaigns — natively through the outbox, or via Instantly."""
         if not self.config.channels.email.enabled:
-            logger.info("Sender: Email channel disabled. Skipping.")
+            logger.info("Sender: canal de email desligado. Pulando.")
             return
 
         if self.is_native:
             await self._run_native()
             return
 
-        logger.info("Sender: Checking for campaigns to deploy...")
+        logger.info("Sender: procurando campanhas para enviar...")
         draft_campaigns = await self.state.get_campaigns_by_status("draft")
         if not draft_campaigns:
-            logger.info("Sender: No draft campaigns to deploy.")
+            logger.info("Sender: nenhuma campanha para enviar.")
             return
 
         # Enforce daily send limit
@@ -96,37 +96,37 @@ class Sender:
         sends_today = await self._count_sends_today()
         remaining = max_sends - sends_today
         if remaining <= 0:
-            logger.info(f"Sender: Daily send limit reached ({sends_today}/{max_sends}). Skipping.")
+            logger.info(f"Sender: limite diário de envio atingido ({sends_today}/{max_sends}). Pulando.")
             return
 
         for campaign in draft_campaigns:
             try:
                 await self._deploy_campaign(campaign)
             except Exception as e:
-                logger.error(f"Sender: Failed to deploy campaign {campaign.name}: {e}")
+                logger.error(f"Sender: não deu para enviar a campanha {campaign.name}: {e}")
 
     def _validate_sequence(self, campaign) -> bool:
         """Never deploy a broken or empty sequence."""
         if not campaign.sequence:
-            logger.error(f"Sender: Campaign '{campaign.name}' has no email sequence. Marking failed.")
+            logger.error(f"Sender: a campanha '{campaign.name}' não tem emails. Marcada como falha.")
             return False
         for step in campaign.sequence:
             if not (step.subject or "").strip() or not (step.body or "").strip():
                 logger.error(
-                    f"Sender: Campaign '{campaign.name}' step {step.step} has an empty "
-                    "subject or body. Marking failed."
+                    f"Sender: a campanha '{campaign.name}' tem a etapa {step.step} sem "
+                    "assunto ou corpo. Marcada como falha."
                 )
                 return False
             if step.delay_days < 0:
                 logger.error(
-                    f"Sender: Campaign '{campaign.name}' step {step.step} has a negative delay."
+                    f"Sender: a campanha '{campaign.name}' tem a etapa {step.step} com atraso negativo."
                 )
                 return False
         return True
 
     async def _deploy_campaign(self, campaign):
         """Deploy a single campaign to Instantly. Idempotent: safe to retry."""
-        logger.info(f"Sender: Deploying campaign '{campaign.name}'...")
+        logger.info(f"Sender: enviando a campanha '{campaign.name}'...")
 
         # 0. Validate before touching the network
         if not self._validate_sequence(campaign):
@@ -144,12 +144,12 @@ class Sender:
         else:
             instantly_campaign = await self.instantly.create_campaign(campaign.name)
             if not instantly_campaign or not isinstance(instantly_campaign, dict):
-                logger.error(f"Sender: Failed to create Instantly campaign: {campaign.name}")
+                logger.error(f"Sender: não deu para criar a campanha no Instantly: {campaign.name}")
                 return
 
             campaign_id = instantly_campaign.get("id")
             if not campaign_id:
-                logger.error("Sender: No campaign ID returned from Instantly.")
+                logger.error("Sender: o Instantly não devolveu o ID da campanha.")
                 return
 
             # Persist the ID immediately so a crash mid-deploy resumes this
@@ -169,7 +169,7 @@ class Sender:
 
         result = await self.instantly.set_campaign_emails(campaign_id, sequences)
         if result is None:
-            logger.error(f"Sender: Failed to set emails for campaign {campaign_id}")
+            logger.error(f"Sender: não deu para colocar os emails na campanha {campaign_id}")
             return
 
         # 3. Add leads — validated, deduped, never-contacted, deliverable-only
@@ -187,7 +187,7 @@ class Sender:
                 continue
             email = prospect.email.strip().lower()
             if not EMAIL_RE.match(email):
-                logger.warning(f"Sender: Skipping invalid email '{prospect.email}'")
+                logger.warning(f"Sender: pulando email inválido '{prospect.email}'")
                 continue
             if email in seen_emails:
                 continue
@@ -211,8 +211,8 @@ class Sender:
 
         if skipped_unverified:
             logger.info(
-                f"Sender: Held back {skipped_unverified} prospect(s) with "
-                f"unverified emails from '{campaign.name}'."
+                f"Sender: segurei {skipped_unverified} lead(s) com "
+                f"email não verificado da campanha '{campaign.name}'."
             )
 
         if not prospects:
@@ -226,13 +226,13 @@ class Sender:
                     break
             if already_staged:
                 logger.info(
-                    f"Sender: Leads for '{campaign.name}' already staged. Retrying activation."
+                    f"Sender: os leads de '{campaign.name}' já estão na fila. Tentando ativar de novo."
                 )
                 if await self.instantly.activate_campaign(campaign_id) is not None:
                     await self.state.update_campaign(campaign.id, status="active")
-                    logger.info(f"Sender: Campaign '{campaign.name}' activated on retry.")
+                    logger.info(f"Sender: campanha '{campaign.name}' ativada na nova tentativa.")
                 return
-            logger.warning(f"Sender: No valid prospects for campaign {campaign.name}")
+            logger.warning(f"Sender: nenhum lead válido para a campanha {campaign.name}")
             return
 
         # Check remaining daily send budget
@@ -243,7 +243,7 @@ class Sender:
             logger.info(f"Sender: Daily limit reached. Deferring campaign '{campaign.name}'.")
             return
         if len(prospects) > remaining:
-            logger.info(f"Sender: Capping leads from {len(prospects)} to {remaining} (daily limit).")
+            logger.info(f"Sender: limitando os leads de {len(prospects)} para {remaining} (limite diário).")
             prospects = prospects[:remaining]
 
         leads = [
@@ -262,7 +262,7 @@ class Sender:
 
         result = await self.instantly.add_leads(campaign_id, leads)
         if result is None:
-            logger.error(f"Sender: Failed to add leads to campaign {campaign_id}")
+            logger.error(f"Sender: não deu para adicionar os leads na campanha {campaign_id}")
             return
 
         # Mark prospects as contacted BEFORE activation: if activation
@@ -275,8 +275,8 @@ class Sender:
         result = await self.instantly.activate_campaign(campaign_id)
         if result is None:
             logger.error(
-                f"Sender: Failed to activate campaign {campaign_id}. "
-                "Leads are staged; will retry activation next cycle."
+                f"Sender: não deu para ativar a campanha {campaign_id}. "
+                "Os leads estão na fila; tento ativar no próximo ciclo."
             )
             return
 
@@ -298,8 +298,8 @@ class Sender:
         )
 
         logger.info(
-            f"Sender: Campaign '{campaign.name}' deployed to Instantly "
-            f"with {len(leads)} leads. Campaign ID: {campaign_id}"
+            f"Sender: campanha '{campaign.name}' enviada ao Instantly "
+            f"com {len(leads)} leads. ID da campanha: {campaign_id}"
         )
 
     async def _count_sends_today(self) -> int:
@@ -321,8 +321,8 @@ class Sender:
         paused = await self.state.get_setting(KILL_SWITCH_KEY)
         if paused:
             logger.warning(
-                f"Sender: SENDING PAUSED ({paused}). Resume from the dashboard "
-                "or `mariana sending resume` once the cause is fixed."
+                f"Sender: ENVIOS PAUSADOS ({paused}). Retome pelo painel "
+                "ou com `mariana sending resume` depois de resolver."
             )
             return
 
@@ -330,7 +330,7 @@ class Sender:
             try:
                 await self._stage_campaign_native(campaign)
             except Exception as e:
-                logger.error(f"Sender: staging '{campaign.name}' failed: {e}")
+                logger.error(f"Sender: falhou ao colocar '{campaign.name}' na fila: {e}")
 
         await self._drain_due()
 
@@ -405,14 +405,14 @@ class Sender:
         await self.state.update_campaign(campaign.id, status="active")
         if skipped:
             logger.info(
-                f"Sender: held back {skipped} prospect(s) with unverified "
-                f"emails from '{campaign.name}'."
+                f"Sender: segurei {skipped} lead(s) com email não "
+                f"verificado da campanha '{campaign.name}'."
             )
         if staged:
-            mode = "awaiting your approval" if require_approval else "approved"
+            mode = "esperando a sua aprovação" if require_approval else "aprovados"
             logger.info(
-                f"Sender: staged {staged} email(s) for '{campaign.name}' "
-                f"({mode}). Review in the dashboard Outbox tab."
+                f"Sender: {staged} email(s) na fila para '{campaign.name}' "
+                f"({mode}). Revise na aba Outbox do painel."
             )
             await self.state.log_action(
                 action_type="stage_campaign",
@@ -424,8 +424,8 @@ class Sender:
         """Send due, approved outbox items through the provider."""
         if not self.provider.is_configured():
             logger.warning(
-                f"Sender: mail provider '{self.provider.name}' is not configured "
-                "yet — outbox is holding. See CLAUDE.md → provider setup."
+                f"Sender: o provedor de email '{self.provider.name}' não está configurado "
+                "ainda: a Outbox está segurando. Veja o CLAUDE.md (passo 4)."
             )
             return
 
@@ -433,7 +433,7 @@ class Sender:
         sent_today = await self.state.count_outbox_sent_today()
         budget = min(MAX_SENDS_PER_CYCLE, max_daily - sent_today)
         if budget <= 0:
-            logger.info(f"Sender: daily send cap reached ({sent_today}/{max_daily}).")
+            logger.info(f"Sender: limite diário atingido ({sent_today}/{max_daily}).")
             return
 
         now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
@@ -496,7 +496,7 @@ class Sender:
                     error="gate: " + "; ".join(gate.reasons)[:300],
                 )
                 logger.warning(
-                    f"Sender: gate blocked email to {item['to_email']}: "
+                    f"Sender: o filtro bloqueou o email para {item['to_email']}: "
                     f"{gate.reasons}"
                 )
                 continue
@@ -509,8 +509,8 @@ class Sender:
                 if clearance.held:
                     compliance_paused = True
                     logger.warning(
-                        f"Sender: compliance check unavailable, holding cold "
-                        f"email until a later cycle: {clearance.reason}"
+                        f"Sender: checagem de lei indisponível, segurando o email "
+                        f"frio para um próximo ciclo: {clearance.reason}"
                     )
                     continue
                 if not clearance.allowed:
@@ -519,7 +519,7 @@ class Sender:
                         error=f"precleared: {clearance.verdict}: {clearance.reason}"[:300],
                     )
                     logger.warning(
-                        f"Sender: Precleared held back email to {item['to_email']}: "
+                        f"Sender: o Precleared segurou o email para {item['to_email']}: "
                         f"{clearance.verdict} ({clearance.reason})"
                     )
                     continue
@@ -571,8 +571,8 @@ class Sender:
                 details=details,
             )
             logger.info(
-                f"Sender: sent step {item['step']} to {item['to_email']} "
-                f"via {self.provider.name}."
+                f"Sender: enviada a etapa {item['step']} para {item['to_email']} "
+                f"pelo {self.provider.name}."
             )
             # Human-ish pacing BETWEEN sends (not after the last, and never
             # in tests where pacing is disabled).
@@ -580,5 +580,5 @@ class Sender:
                 await asyncio.sleep(random.uniform(*SEND_JITTER_SECONDS))
 
         if sent:
-            logger.info(f"Sender: {sent} email(s) sent this cycle "
-                        f"({sent_today + sent}/{max_daily} today).")
+            logger.info(f"Sender: {sent} email(s) enviado(s) neste ciclo "
+                        f"({sent_today + sent}/{max_daily} hoje).")

@@ -108,7 +108,7 @@ class Handler:
         heartbeat sends nothing in a cycle where this isn't True, because a
         reply that wasn't read can't have cancelled its queued follow-ups.
         """
-        logger.info("Handler: Checking for replies...")
+        logger.info("Handler: procurando respostas...")
 
         # Load foundational skills for this agent
         self.skills = self.brain.load_skills_for_agent("handler")
@@ -122,7 +122,7 @@ class Handler:
         # 1. Fetch active campaigns
         active_campaigns = await self.state.get_campaigns_by_status("active")
         if not active_campaigns:
-            logger.info("Handler: No active campaigns to monitor.")
+            logger.info("Handler: nenhuma campanha ativa para acompanhar.")
             return True
 
         total_handled = 0
@@ -136,7 +136,7 @@ class Handler:
             try:
                 replies = await self.instantly.get_replies(campaign.instantly_campaign_id)
             except Exception as e:
-                logger.error(f"Handler: Failed to fetch replies for {campaign.name}: {e}")
+                logger.error(f"Handler: não deu para buscar as respostas de {campaign.name}: {e}")
                 complete = False
                 continue
             if not replies:
@@ -150,16 +150,16 @@ class Handler:
                     if handled:
                         total_handled += 1
                 except BrainUnavailable as e:
-                    logger.error(f"Handler: stopping; replies are left for later ({e}).")
+                    logger.error(f"Handler: parando; as respostas ficam para depois ({e}).")
                     return False
                 except Exception as e:
-                    logger.error(f"Handler: Error processing reply: {e}")
+                    logger.error(f"Handler: erro ao tratar a resposta: {e}")
                     complete = False
 
         if total_handled:
-            logger.info(f"Handler: Processed {total_handled} replies.")
+            logger.info(f"Handler: {total_handled} resposta(s) tratada(s).")
         else:
-            logger.info("Handler: No new replies.")
+            logger.info("Handler: nenhuma resposta nova.")
         return complete
 
     async def _handle_reply(self, reply: dict, campaign) -> bool:
@@ -176,7 +176,7 @@ class Handler:
             logger.debug(f"Handler: Reply {reply_uuid} already processed. Skipping.")
             return False
 
-        logger.info(f"Handler: Reply from {lead_email}")
+        logger.info(f"Handler: resposta de {lead_email}")
 
         consumed = True
         try:
@@ -216,7 +216,7 @@ class Handler:
             prospect = await self.state.get_prospect_by_email(lead_email)
         lead_email = lead_email or prospect.email if prospect else lead_email
         if not prospect:
-            logger.warning(f"Handler: No prospect found for {lead_email}")
+            logger.warning(f"Handler: nenhum lead encontrado para {lead_email}")
             return
 
         # Update prospect status + stop-on-reply: a human answered, so every
@@ -226,8 +226,8 @@ class Handler:
             cancelled = await self.state.cancel_pending_outbox_for_prospect(prospect.id)
             if cancelled:
                 logger.info(
-                    f"Handler: cancelled {cancelled} queued email(s) for "
-                    f"{lead_email} (they replied)."
+                    f"Handler: cancelei {cancelled} email(s) na fila para "
+                    f"{lead_email} (respondeu)."
                 )
             # Same for WhatsApp/LinkedIn/Instagram drafts: they answered.
             await self.state.cancel_pending_channels_for_prospect(prospect.id)
@@ -243,7 +243,7 @@ class Handler:
             intent = "escalate"
         else:
             intent = await self._classify_intent(reply_text, prospect)
-        logger.info(f"Handler: Intent for {lead_email}: {intent}")
+        logger.info(f"Handler: intenção de {lead_email}: {intent}")
         try:
             from harvey.notify import notify_reply
             who = prospect.full_name() or prospect.company or lead_email
@@ -294,7 +294,7 @@ class Handler:
                 stage=convo.stage,
             )
         if convo.stage != old_stage:
-            logger.info(f"Handler: Stage for {lead_email}: {old_stage} -> {convo.stage}")
+            logger.info(f"Handler: estágio de {lead_email}: {old_stage} -> {convo.stage}")
 
         # 3. Route based on intent
         if intent == "unsubscribe":
@@ -306,7 +306,7 @@ class Handler:
                 agent="handler",
                 details={"prospect_email": lead_email},
             )
-            logger.info(f"Handler: {lead_email} opted out. Suppressed permanently. No reply sent.")
+            logger.info(f"Handler: {lead_email} pediu para sair. Bloqueado para sempre. Nenhuma resposta enviada.")
             return
 
         if intent == "escalate":
@@ -321,22 +321,22 @@ class Handler:
                 },
             )
             logger.warning(
-                f"Handler: ESCALATED reply from {lead_email} — needs human review. No auto-reply sent."
+                f"Handler: resposta de {lead_email} PRECISA DE VOCÊ. Nenhuma resposta automática."
             )
             return
 
         if intent == "not_interested":
             await self.state.update_conversation(convo.id, status="closed", stage="closed_lost")
             await self.state.update_prospect_status(prospect.id, "lost")
-            logger.info(f"Handler: {lead_email} not interested. Closing. One no is enough.")
+            logger.info(f"Handler: {lead_email} sem interesse. Encerrando. Um não basta.")
             return
 
         if intent == "ooo":
-            logger.info(f"Handler: {lead_email} is OOO. Will follow up later.")
+            logger.info(f"Handler: {lead_email} está ausente. Volto a falar depois.")
             return
 
         if intent not in AUTO_REPLY_INTENTS:
-            logger.warning(f"Handler: No auto-reply policy for intent '{intent}'. Skipping reply.")
+            logger.warning(f"Handler: sem regra de resposta para a intenção '{intent}'. Pulando.")
             return
 
         # For interested, objection, question, wrong_person — the reply drafted above
@@ -351,8 +351,8 @@ class Handler:
                          "reply_preview": reply_text[:200]},
             )
             logger.warning(
-                f"Handler: Could not generate a response for {lead_email}. "
-                "Flagged for human review."
+                f"Handler: não deu para escrever a resposta para {lead_email}. "
+                "Marcada para você revisar."
             )
             return
 
@@ -377,7 +377,7 @@ class Handler:
                     convo.id,
                     thread_json=convo.thread_json(),
                 )
-                logger.info(f"Handler: Replied to {lead_email}")
+                logger.info(f"Handler: respondido para {lead_email}")
 
                 await self.state.log_action(
                     action_type="reply",
@@ -403,7 +403,7 @@ class Handler:
         try:
             inbound = await self.provider.get_replies()
         except Exception as e:
-            logger.error(f"Handler: fetching replies failed: {e}")
+            logger.error(f"Handler: falhou ao buscar respostas: {e}")
             return False
 
         handled = 0
@@ -431,19 +431,19 @@ class Handler:
             except BrainUnavailable as e:
                 consumed = False
                 complete = False
-                logger.error(f"Handler: stopping; replies are left for later ({e}).")
+                logger.error(f"Handler: parando; as respostas ficam para depois ({e}).")
                 break
             except Exception as e:
-                logger.error(f"Handler: error processing {msg.from_email}: {e}")
+                logger.error(f"Handler: erro ao tratar {msg.from_email}: {e}")
                 complete = False
             finally:
                 if consumed:
                     await self.state.mark_reply_processed(dedup_key)
 
         if handled:
-            logger.info(f"Handler: processed {handled} inbound message(s).")
+            logger.info(f"Handler: {handled} mensagem(ns) recebida(s) tratada(s).")
         else:
-            logger.info("Handler: no new replies.")
+            logger.info("Handler: nenhuma resposta nova.")
         return complete
 
     async def _handle_bounce(self, msg):
@@ -461,13 +461,13 @@ class Handler:
                 prospect.id, reason="bounced"
             )
             logger.warning(
-                f"Handler: BOUNCE for {prospect.email} — marked invalid, "
-                f"cancelled {cancelled} queued email(s)."
+                f"Handler: BOUNCE de {prospect.email}: marcado como inválido, "
+                f"{cancelled} email(s) da fila cancelado(s)."
             )
         else:
             logger.warning(
-                f"Handler: bounce received ({msg.subject[:60]}) but couldn't "
-                "match it to a sent email."
+                f"Handler: bounce recebido ({msg.subject[:60]}), mas não deu para "
+                "ligar a um email enviado."
             )
 
         bounces = await self.state.increment_setting(BOUNCE_COUNT_KEY)
@@ -490,7 +490,7 @@ class Handler:
                 f"{max_rate:.0%} — check list quality before resuming"
             )
             await self.state.set_setting(KILL_SWITCH_KEY, reason)
-            logger.error(f"Handler: KILL SWITCH ENGAGED — {reason}")
+            logger.error(f"Handler: BOTÃO DE PÂNICO ACIONADO: {reason}")
 
     async def _queue_native_reply(
         self, response: str, prospect, convo, reply_meta: dict, intent: str
@@ -517,8 +517,8 @@ class Handler:
             in_reply_to=reply_meta.get("message_id", ""),
         )
         if item_id:
-            mode = "queued for your approval" if require_approval else "queued to send"
-            logger.info(f"Handler: reply to {prospect.email} {mode} ({intent}).")
+            mode = "esperando a sua aprovação" if require_approval else "na fila para sair"
+            logger.info(f"Handler: resposta para {prospect.email} {mode} ({intent}).")
             await self.state.log_action(
                 action_type="reply_queued",
                 agent="handler",
@@ -547,8 +547,8 @@ class Handler:
             mode=(self.config.channels.whatsapp.mode if channel == "whatsapp" else "manual"),
         )
         if item_id:
-            logger.info(f"Handler: {channel} reply to {prospect.full_name()} waiting "
-                        f"in Mensagens ({intent}).")
+            logger.info(f"Handler: resposta de {channel} para {prospect.full_name()} esperando "
+                        f"na aba Mensagens ({intent}).")
             await self.state.log_action(
                 action_type="reply_queued", agent="handler",
                 details={"channel": channel, "intent": intent,
@@ -638,7 +638,7 @@ Respond with ONLY the category label, nothing else."""
                 # reply: don't escalate it, leave it unprocessed.
                 raise BrainUnavailable(paused)
             # Classifier failed. Do NOT auto-reply blind — flag for a human.
-            logger.warning("Handler: Intent classifier returned nothing. Escalating.")
+            logger.warning("Handler: a classificação não devolveu nada. Passando para você.")
             return "escalate"
 
         # Robust extraction: take the first recognized label anywhere in
@@ -650,7 +650,7 @@ Respond with ONLY the category label, nothing else."""
             if label in cleaned:
                 return label
 
-        logger.warning(f"Handler: Unknown intent '{cleaned[:80]}'. Defaulting to 'question'.")
+        logger.warning(f"Handler: intenção desconhecida '{cleaned[:80]}'. Tratando como 'question'.")
         return "question"
 
     def _determine_stage(self, intent: str, current_stage: str, reply_text: str) -> str:
@@ -780,6 +780,6 @@ Write a reply that:"""
         response = response.strip()
         # Guard against the model returning meta-text instead of an email
         if response.lower().startswith(("i can't", "i cannot", "as an ai", "sorry,")):
-            logger.warning("Handler: Model returned meta-text instead of an email. Discarding.")
+            logger.warning("Handler: o modelo devolveu um comentário em vez da mensagem. Descartado.")
             return ""
         return response
