@@ -1,6 +1,6 @@
 # Mariana: secretária de IA para audiovisual
 
-A Mariana encontra clientes para profissionais de audiovisual (filmmakers, editores, produtoras), escreve as mensagens, cuida das respostas e leva cada conversa até uma call, um briefing ou um orçamento. Ela é um fork do Harvey (github.com/ethanplusai/harvey) e roda na assinatura do Claude Code, sem custo de API.
+A Mariana encontra clientes para profissionais de audiovisual (filmmakers, editores, produtoras), escreve as mensagens, cuida das respostas e leva cada conversa até uma call, um briefing ou um orçamento. Ela roda na assinatura do Claude Code, sem custo de API.
 
 **Você (Claude) é o guia.** Fale em português do Brasil, uma coisa de cada vez, sem jargão. Nunca use travessão (em dash) em nada que escrever para o usuário ou em mensagens da Mariana.
 
@@ -70,7 +70,7 @@ Regra de canal por mercado (automática, `harvey/market.py`):
 Tudo cai na aba **Mensagens** do painel. A Mariana escreve; a pessoa aprova, clica em "Abrir no WhatsApp" (abre o WhatsApp dela com o texto pronto) ou "Copiar e abrir perfil" (LinkedIn/Instagram) e envia da própria conta. Nenhuma conta é automatizada, então não há risco de ban.
 - `mariana whatsapp-check` confere a configuração.
 - Modo `cloud_api` (opcional, `channels.whatsapp.mode`): envio automático pela API oficial da Meta, **só** para contatos marcados como opt-in (quem respondeu ou pediu contato). Precisa de `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID` no `.env` (Meta for Developers > WhatsApp > API Setup). Nunca ofereça automação não oficial do WhatsApp Web.
-- O login automatizado no LinkedIn do Harvey fica desligado (`automate_login: false`): ele viola os termos do LinkedIn.
+- O login automatizado no LinkedIn do Mariana fica desligado (`automate_login: false`): ele viola os termos do LinkedIn.
 
 ### Passo 5b: agenda, avisos e números
 - **Agenda real:** ative a Google Calendar API no mesmo projeto do Gmail e rode `mariana gmail auth` de novo. `mariana agenda-check` mostra os próximos horários livres. Nas respostas a interessados, a Mariana oferece esses horários exatos (ou o link de `product.offer.booking_url`, se `booking_method: calendar_link`). Ajustes em `calendar:` no config (horário de trabalho, dias, duração).
@@ -117,58 +117,57 @@ mariana run         # ciclo a cada 15 min; nada sai sem aprovação
 
 ---
 
-## Referência técnica (herdada do Harvey)
+## Referência técnica
 
-O pacote Python interno continua se chamando `harvey` para não quebrar o código herdado; o comando `harvey` é sinônimo de `mariana`.
+A pasta do código se chama `harvey/` por motivo interno; o comando é `mariana`.
 
-### Architecture
-- **Heartbeat loop** (`main.py`): Every cycle → check quiet hours → check budget → decide → act → log → sleep
-- **Brain** (`brain.py`): Wraps `claude -p --output-format json --dangerously-skip-permissions` for headless Claude calls; records exact per-call token usage into `usage_events`
-- **State** (`state.py`): SQLite at `data/harvey.db` with tables for companies, prospects, campaigns, conversations, actions, usage
-- **Usage tracking** (`usage.py`, `integrations/quota.py`): per-call attribution (agent/task/model/tokens) for Harvey's OWN Claude calls only — it never scans your other Claude Code sessions — plus a live subscription-quota gauge read the same way Claude Code's `/usage` does. The budget check throttles Harvey against real quota utilization so it always leaves headroom for your own interactive Claude use (`usage.max_daily_claude_percent`). Dashboard has a Usage tab; CLI has `harvey usage`.
-- **Skills** (`skills/`): Markdown knowledge files injected into agent prompts
-- **Signals** (`signals.py`, `state.py`): every fact Harvey learns is an OBSERVATION — a row in `observations`, never a column. A new signal needs no migration, re-observing over time is a free time series, and confidence + provenance travel with the fact. The vocabulary in `signal_codes` is governed (a trigger rejects any code not in it) and gated: only `status = 'confirmed'` signals are collected, and only a human sets that. `state.cohort(require, exclude)` does the set intersection in SQL.
-- **Dashboard** (`dashboard.py` + `harvey/web/`): FastAPI JSON API plus plain HTML/CSS/JS served from disk — no build step. Edit `harvey/web/app.css` or `app.js` and reload the page.
-- **DISCOVER** (`collectors/discover.py`): the only stage that spends money, so cost discipline lives in the collector, not the database — every run estimates first, checks a spend cap between batches, reads a kill switch, and flushes observations per batch. Providers are adapters behind one interface (`DiscoveryProvider`); adding one is a small class. Junk filtering matches *patterns*, not a literal blocklist. Entity resolution is the normalised domain, falling back to the provider's `external_id` for businesses with no website.
+### Arquitetura
+- **Ciclo** (`main.py`): a cada volta, confere o horário de silêncio, confere o orçamento, decide, faz, registra e dorme.
+- **Cérebro** (`brain.py`): chama o `claude -p` em modo automático (ou o Codex) e registra os tokens de cada chamada em `usage_events`.
+- **Estado** (`state.py`): SQLite em `data/harvey.db`, com migrações numeradas (`PRAGMA user_version`).
+- **Uso** (`usage.py`, `integrations/quota.py`): conta só as chamadas da própria Mariana e lê a cota real da assinatura, freando antes de `usage.max_daily_claude_percent` para sobrar folga para o seu uso.
+- **Base de conhecimento** (`skills/`): arquivos Markdown que entram nos prompts dos agentes.
+- **Sinais** (`signals.py`): todo fato é uma linha em `observations`. Só sinais confirmados pelo usuário são coletados; `state.cohort(require, exclude)` monta o público em SQL.
+- **Painel** (`dashboard.py` + `harvey/web/`): API FastAPI e HTML/CSS/JS servidos do disco, sem build.
+- **Descoberta** (`collectors/discover.py`): estima antes, respeita teto de gasto, filtra lixo por padrão; o radar de eventos fica em `collectors/events.py`.
+- **Mercado e canais** (`market.py`, `agents/channels.py`): Brasil ou exterior pelo telefone, domínio ou cidade; define idioma e canal.
+- **Fechamento** (`proposal.py`, `pricing.py`, `production.py`, `agents/postjob.py`, `samples.py`, `metrics.py`, `notify.py`, `integrations/calendar.py`).
 
-### Sub-Agents
-- **Scout**: Python does all web searching (DuckDuckGo → Bing → Google → Serper API) and email resolution (pattern-first: cache → scraped mailto → Hunter domain search → default, then verify one candidate via Reoon/ZeroBounce/Hunter/SMTP; catch-alls flagged `risky`). Claude only scores/personalizes found data. Scout also collects **buying signals**: tech stack detected on each company's site (HubSpot, Shopify, Intercom, ~35 tools — zero extra requests) and hiring signals from careers pages. With `pip install python-jobspy` (optional), a job-board strategy discovers companies actively hiring for roles in `icp.hiring_signals` (falls back to `icp.titles`) — the strongest in-market signal. Signals land in prospects' personalization notes and boost their score.
-- **Writer**: Generates 3-email sequences (Email 1 < 75 words, Email 2 < 75, Email 3 < 40). Strict ban list on AI patterns.
-- **Sender**: Native providers (gmail/smtp) render merge vars per prospect and STAGE each email into the `outbox` (pending_review → approved → sent) with a scheduled send time; each heartbeat drains due, approved items with human-like pacing, the daily cap, the deterministic pre-send gate, and stop-on-reply. Legacy Instantly path deploys campaigns via API. Enforces daily send limits either way.
-- **Handler**: Polls the provider (or Instantly) for replies, dedups them, classifies intent, advances conversation stage, and queues auto-responses through the same outbox approval ladder. On native providers it also detects bounces → marks the address invalid, cancels the prospect's queued sends, and trips a global kill switch past a bounce-rate threshold.
-- **Analyst**: Runs on idle cycles. Generates `data/analytics.json` with pipeline stats and insights.
+### Agentes
+- **Scout**: o Python busca empresas e resolve emails (padrão primeiro, depois verificação de um candidato); o modelo só pontua e personaliza.
+- **Writer**: sequências de 3 emails (menos de 75, 75 e 40 palavras), no idioma do mercado, com lista de frases proibidas.
+- **Channels**: uma mensagem de WhatsApp (Brasil), LinkedIn (exterior) ou Instagram por lead, sempre enviada pelo usuário.
+- **Sender**: agenda cada email na `outbox` (pending_review → approved → sent) e envia os aprovados com ritmo humano, limite diário, filtro antes do envio e parada quando a pessoa responde. A assinatura entra no envio.
+- **Handler**: lê respostas (email, ou coladas/webhook dos outros canais), classifica, avança o estágio e rascunha a resposta com horários livres e portfólio. Detecta bounce e aciona o botão de pânico.
+- **PostJob**: follow-up de proposta, lembrete de gravação, aviso de entrega, depoimento, indicação e retomada.
+- **Analyst**: nos ciclos parados, gera `data/analytics.json`.
 
-### Conversation Stages
+### Estágios da conversa
 `initial_outreach → engaged → qualifying → presenting → negotiating → closing → closed_won / closed_lost`
 
-### Priority Order
-handle_replies > send_campaigns > write_campaigns > prospect > idle (run analyst)
+### Prioridade
+responder > enviar campanhas > escrever campanhas > prospectar > analisar
 
-### Key Commands
+### Comandos principais
 ```bash
-source .venv/bin/activate    # Always activate venv first
-harvey run                   # Start the heartbeat loop
-harvey dashboard             # Web UI at http://localhost:5555
-harvey setup                 # Re-run setup wizard
-harvey train <url>           # Train on a product website
-harvey status                # Pipeline summary
-harvey usage                 # Claude quota gauges + per-agent token usage (no dollar costs — subscription plans aren't billed per token)
-harvey export                # Deliverable prospects → sequencer-ready CSV (prospects.csv)
-harvey export --all          # Full raw list, no filters
-harvey gmail auth            # One-time Gmail OAuth (when provider: gmail)
-harvey gmail test            # Verify the Gmail connection
-harvey outbox                # Review queued emails; --approve <id> / --approve-all / --reject <id>
-harvey signals               # The signal vocabulary; --confirm / --reject CODES (or 'free' / 'all')
-harvey discover              # Find businesses; --providers / --estimate / --provider <key>
-harvey sending pause|resume  # Kill switch for all outbound
+source .venv/bin/activate     # ativar o ambiente antes
+mariana onboard               # primeiro uso
+mariana run                   # o ciclo
+mariana dashboard             # painel em http://localhost:5555
+mariana status                # resumo (--check testa o cérebro)
+mariana usage                 # cota e tokens por agente
+mariana export                # leads entregáveis em CSV (--all: tudo)
+mariana gmail auth|test       # Gmail + Google Agenda
+mariana outbox                # --approve <id> / --approve-all / --reject <id>
+mariana signals               # --confirm / --reject CÓDIGOS (ou free / all)
+mariana discover              # --providers / --estimate / --provider <fonte>
+mariana sending pause|resume  # botão de pânico
 ```
 
-### Common Issues
-- **"command not found: harvey"**: Activate venv first: `source .venv/bin/activate`
-- **"ModuleNotFoundError: No module named 'harvey'" after install (macOS)**: Python 3.13 silently ignores `.pth` files that carry the macOS hidden file flag, and some Macs propagate that flag into `.venv`. Run `harvey install` again (it auto-fixes by linking the package), or manually: `ln -s "$(pwd)/harvey" .venv/lib/python3.13/site-packages/harvey`
-- **"externally-managed-environment"**: Use a venv, not system Python
-- **SQLite errors**: The `data/` directory is created automatically on first run
-- **Claude headless mode fails**: User needs `claude login` and an active Max subscription
-- **Codex calls fail** (`brain.provider: codex`): the log line says why — `codex login` with ChatGPT (also when the login "has expired or is due for renewal": Harvey never renews it), install the supported Codex version (`harvey status --check` shows what's wrong without a model call; while Codex is unusable Harvey pauses whole cycles on purpose), pick a `brain.model` without code mode, or remove whatever Codex config layer is forcing tools/hooks/MCP back on. Never weaken Harvey's isolation checks to get past it.
-- **Instantly API 401**: Wrong API key or needs the Growth plan for API access
-- **Google search rate limiting**: Harvey automatically falls back to DuckDuckGo and Bing. For reliable search, add a Serper API key ($5/mo).
+### Problemas comuns
+- **"command not found: mariana"**: ative o ambiente (`source .venv/bin/activate`).
+- **"ModuleNotFoundError" depois de instalar (Mac, Python 3.13)**: o Python ignora arquivos `.pth` com a marca de oculto do macOS. Rode `mariana install` de novo, ou: `ln -s "$(pwd)/harvey" .venv/lib/python3.13/site-packages/harvey`.
+- **"externally-managed-environment"**: use o ambiente virtual, não o Python do sistema.
+- **O Claude não responde em modo automático**: `claude login` e assinatura ativa.
+- **Codex falhando** (`brain.provider: codex`): a mensagem do log diz o que fazer: `codex login` com ChatGPT, instalar a versão suportada (`mariana status --check` mostra o problema sem gastar chamada) ou tirar a configuração do Codex que força ferramentas. Nunca enfraqueça o isolamento para contornar.
+- **Busca do Google limitada**: ela cai para DuckDuckGo e Bing sozinha; para busca confiável, uma chave do Serper.

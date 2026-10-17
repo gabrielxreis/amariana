@@ -1,4 +1,4 @@
-# Template. Rode `mariana onboard` no primeiro uso: ele gera o
+# Modelo. Rode `mariana onboard` no primeiro uso: ele gera o
 # harvey.local.yaml (fora do git) com os SEUS dados, que tem prioridade.
 persona:
   name: ""                       # quem assina os emails (você)
@@ -58,11 +58,11 @@ icp:
 channels:
   email:
     enabled: true
-    provider: "gmail"          # gmail (recommended) | microsoft | smtp | instantly
+    provider: "gmail"          # gmail (recomendado) | microsoft | smtp | instantly
     max_daily_sends: 50
-    require_approval: true      # native providers: emails wait in the Outbox
-    send_to_risky: false        # also send to catch-all domains (off = safest)
-    max_bounce_rate: 0.05       # pause all sending if bounces exceed this
+    require_approval: true      # os emails esperam a sua aprovação na Outbox
+    send_to_risky: false        # enviar também a domínios que aceitam tudo (desligado = mais seguro)
+    max_bounce_rate: 0.05       # pausa todos os envios se os bounces passarem disso
   linkedin:
     enabled: true                # rascunhos de convite + mensagem p/ clientes de fora
     max_daily_connections: 20
@@ -88,14 +88,13 @@ usage:
     end: "08:00"
     timezone: "America/Sao_Paulo"
 
-# Optional: check each new recipient with Precleared (precleared.dev) before
-# the first cold email: may cold marketing email go to this address under UK
-# PECR, US CAN-SPAM, Canada's CASL, Germany's UWG and France's rules? Any other
-# answer holds the email back, with the reason in the Outbox. One check per
-# address; 10 a day free without a key, 25 with a free key (PRECLEARED_API_KEY
-# in .env). Applies to the native providers (gmail, smtp).
+# Opcional: confere cada destinatário novo no Precleared (precleared.dev)
+# antes do primeiro email frio, pelas regras do Reino Unido (PECR), EUA
+# (CAN-SPAM), Canadá (CASL), Alemanha (UWG) e França. Qualquer resposta que
+# não seja "pode" segura o email, com o motivo na Outbox. Uma checagem por
+# endereço; 10/dia sem chave, 25 com chave grátis (PRECLEARED_API_KEY no .env).
 compliance:
   precleared:
     enabled: false
-    sender_country: ""          # GB or US: where your business is based
-    address_source: "unknown"   # published | bought | scraped | given | unknown
+    sender_country: ""          # GB ou US: onde fica o seu negócio
+    address_source: "unknown"   # de onde vêm os endereços: published | bought | scraped | given | unknown

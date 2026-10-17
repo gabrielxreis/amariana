@@ -57,7 +57,7 @@ def _write_login(home: Path, expires_in: float = 86400, refreshed_ago: float = 3
 @pytest.fixture(autouse=True)
 def private_tempdir(monkeypatch, tmp_path):
     """Runtimes go under this test's own temp dir, so leftover checks can't
-    race other Harvey processes sharing the system temp folder."""
+    race other Mariana processes sharing the system temp folder."""
     runtimes = tmp_path / "runtimes"
     runtimes.mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(runtimes))

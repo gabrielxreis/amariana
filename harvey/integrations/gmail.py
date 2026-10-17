@@ -5,12 +5,12 @@ Setup (one-time):
 2. OAuth consent screen (internal or testing) → create an OAuth client of
    type "Desktop app". Put its id/secret in .env as GMAIL_CLIENT_ID /
    GMAIL_CLIENT_SECRET.
-3. Run ``harvey gmail auth`` — opens a browser, stores the refresh token
-   in data/gmail_token.json. Done: Harvey can send and read.
+3. Run ``mariana gmail auth`` — opens a browser, stores the refresh token
+   in data/gmail_token.json. Done: Mariana can send and read.
 
 Deliverability notes: use a mailbox on a dedicated SECONDARY domain (never
 your main one), configure SPF/DKIM/DMARC, ramp volume slowly, and watch
-Google Postmaster Tools. Harvey's outbox pacing + kill switches handle the
+Google Postmaster Tools. Mariana's outbox pacing + kill switches handle the
 rest.
 """
 
@@ -90,7 +90,7 @@ class GmailProvider(MailProvider):
             return self._access_token
         stored = _load_token()
         if not stored:
-            logger.error("Gmail: not authorized. Run 'harvey gmail auth'.")
+            logger.error("Gmail: not authorized. Run 'mariana gmail auth'.")
             return None
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -106,7 +106,7 @@ class GmailProvider(MailProvider):
         if resp.status_code != 200:
             logger.error(
                 f"Gmail token refresh rejected ({resp.status_code}). "
-                "Re-run 'harvey gmail auth'."
+                "Re-run 'mariana gmail auth'."
             )
             return None
         data = resp.json()
@@ -255,7 +255,7 @@ class GmailProvider(MailProvider):
         if not self.client_id or not self.client_secret:
             return False, "GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET missing from .env"
         if not _load_token():
-            return False, "Not authorized yet — run 'harvey gmail auth'"
+            return False, "Not authorized yet — run 'mariana gmail auth'"
         data = await self._request("GET", "/profile")
         if data and data.get("emailAddress"):
             return True, f"Connected as {data['emailAddress']}"
@@ -356,7 +356,7 @@ def run_auth_flow(client_id: str, client_secret: str) -> bool:
         return False
     data = resp.json()
     if not data.get("refresh_token"):
-        print("  Google returned no refresh token. Remove Harvey from your"
+        print("  Google returned no refresh token. Remove Mariana from your"
               " account's third-party access list and retry.")
         return False
     _save_token({

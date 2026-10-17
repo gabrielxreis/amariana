@@ -1,4 +1,4 @@
-"""SQLite state manager. All of Harvey's memory lives here.
+"""SQLite state manager. All of Mariana's memory lives here.
 
 Concurrency: the DB runs in WAL mode (set persistently at init) so the
 dashboard can read while the agent writes. Every connection gets a busy
@@ -295,7 +295,7 @@ MIGRATIONS: list[str] = [
     -- The governed vocabulary. A collector may only emit a code that exists
     -- here (enforced by the observations FK), so a typo fails loudly instead
     -- of quietly inventing a junk signal. `status` is the user-confirmation
-    -- gate: Harvey PROPOSES signals, the user confirms which ones to
+    -- gate: Mariana PROPOSES signals, the user confirms which ones to
     -- prospect against, and only confirmed signals get collected.
     CREATE TABLE IF NOT EXISTS signal_codes (
         code TEXT PRIMARY KEY,
@@ -1296,7 +1296,7 @@ class StateManager:
 
     async def set_signal_status(self, code: str, status: str) -> bool:
         """Confirm / reject a proposed signal. Only confirmed signals are
-        collected — Harvey proposes, the user decides."""
+        collected — Mariana proposes, the user decides."""
         if status not in ("proposed", "confirmed", "rejected"):
             raise ValueError(f"invalid signal status: {status}")
         async with self._connect() as db:
@@ -1544,7 +1544,7 @@ class StateManager:
     ) -> list[dict]:
         """Companies with a domain, zero prospects, and no recent check.
 
-        `harvey discover` (and other company-only sources) can add companies
+        `mariana discover` (and other company-only sources) can add companies
         without ever finding a named contact at them. This is what lets a
         prospecting pass go back and fill that in, instead of only ever
         looking at companies it stumbles into fresh in the same cycle.

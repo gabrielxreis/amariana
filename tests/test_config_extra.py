@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from harvey.config import (
     ConfigError,
-    HarveyConfig,
+    MarianaConfig,
     EnvConfig,
     QuietHoursConfig,
     load_config,
@@ -78,7 +78,7 @@ def test_config_missing_required_persona_field():
     data["persona"] = dict(MINIMAL["persona"])
     del data["persona"]["email"]
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
 
 
 def test_config_wrong_type_raises():
@@ -88,7 +88,7 @@ def test_config_wrong_type_raises():
         "titles": [], "geography": [],
     }
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
 
 
 def test_usage_and_channel_overrides():
@@ -99,7 +99,7 @@ def test_usage_and_channel_overrides():
         "quiet_hours": {"start": "23:00", "end": "06:00", "timezone": "UTC"},
     }
     data["channels"] = {"email": {"enabled": False, "max_daily_sends": 10}}
-    config = HarveyConfig(**data)
+    config = MarianaConfig(**data)
     assert config.usage.max_daily_claude_percent == 50.0
     assert config.usage.heartbeat_interval_minutes == 5
     assert config.usage.quiet_hours.timezone == "UTC"
@@ -129,31 +129,31 @@ def test_usage_rejects_out_of_range_percent():
     data = dict(MINIMAL)
     data["usage"] = {"max_daily_claude_percent": 150}
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
     data["usage"] = {"max_daily_claude_percent": 0}
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
 
 
 def test_usage_rejects_zero_heartbeat():
     data = dict(MINIMAL)
     data["usage"] = {"heartbeat_interval_minutes": 0}
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
 
 
 def test_email_channel_rejects_negative_sends():
     data = dict(MINIMAL)
     data["channels"] = {"email": {"max_daily_sends": -5}}
     with pytest.raises(ValidationError):
-        HarveyConfig(**data)
+        MarianaConfig(**data)
 
 
 def test_offer_override():
     data = dict(MINIMAL)
     data["product"] = dict(MINIMAL["product"])
     data["product"]["offer"] = {"goal": "start_trial", "booking_url": "https://cal.com/x"}
-    config = HarveyConfig(**data)
+    config = MarianaConfig(**data)
     assert config.product.offer.goal == "start_trial"
     assert config.product.offer.booking_url == "https://cal.com/x"
     assert config.product.offer.meeting_duration == "15 minutes"

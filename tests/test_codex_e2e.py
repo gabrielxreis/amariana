@@ -1,7 +1,7 @@
 """End-to-end: the real heartbeat, agents, Brain and Codex adapter, driven
 through the scripted Codex CLI (tests/fake_codex.py).
 
-Everything outside Harvey is a fixture: a disposable database and config,
+Everything outside Mariana is a fixture: a disposable database and config,
 a capturing mail transport (nothing is ever sent over the network), a
 stubbed Scout and profiler (they would reach the internet), and a fake
 ChatGPT login. These tests check what an operator would see across whole
@@ -26,7 +26,7 @@ import harvey.codex as hc
 pytestmark = pytest.mark.skipif(sys.platform == "win32",
                                 reason="the Codex provider isn't supported on Windows")
 import harvey.main as main_mod
-from harvey.config import EnvConfig, HarveyConfig
+from harvey.config import EnvConfig, MarianaConfig
 from harvey.integrations.mail_provider import InboundMessage
 from harvey.models.conversation import Conversation, Message
 from harvey.state import StateManager
@@ -37,7 +37,7 @@ FAKE = str(Path(__file__).with_name("fake_codex.py"))
 FIXTURES = Path(__file__).with_name("fixtures")
 
 BASE = {
-    "persona": {"name": "Harvey", "company": "Acme Tools", "role": "BD",
+    "persona": {"name": "Mariana", "company": "Acme Tools", "role": "BD",
                 "email": "harvey@acme.example", "linkedin": "", "tone": "direct"},
     "product": {"name": "Widget", "description": "Widgets for teams", "pricing": "$10",
                 "key_benefits": ["fast"], "objection_responses": {}},
@@ -54,7 +54,7 @@ FAKE_CLAUDE = (
 
 
 class Harness:
-    """One disposable Harvey install wired to fixtures."""
+    """One disposable Mariana install wired to fixtures."""
 
     def __init__(self, monkeypatch, tmp_path, provider="codex", model="gpt-5.5", db=None):
         self.tmp = tmp_path
@@ -133,10 +133,10 @@ class Harness:
         brain = {"provider": provider}
         if model:
             brain["model"] = model
-        self.config = HarveyConfig(**BASE, brain=brain)
+        self.config = MarianaConfig(**BASE, brain=brain)
 
     async def run_cycles(self, n=1, between=None):
-        """Run one heartbeat (one Harvey process) for ``n`` cycles.
+        """Run one heartbeat (one Mariana process) for ``n`` cycles.
         ``between[k]`` runs after cycle k, inside the same process."""
         self.cycles = 0
         self.stop_after = n
@@ -270,7 +270,7 @@ async def test_expired_login_pauses_everything_and_recovers_after_renewal(harvey
 
     await harvey.run_cycles(2)
     # Paused before any agent ran: no reply consumed, no email sent, no
-    # runtime started, and the reason is recorded for `harvey status`.
+    # runtime started, and the reason is recorded for `mariana status`.
     assert not await harvey.state.is_reply_processed("in-1")
     assert harvey.mail.sent == []
     assert harvey.count("cmd", "app-server") == 0
@@ -285,7 +285,7 @@ async def test_expired_login_pauses_everything_and_recovers_after_renewal(harvey
     assert await harvey.state.is_reply_processed("in-1")
     assert [m["to"] for m in harvey.mail.sent] == ["bob@beta.com"]
     assert (await harvey.status())["status"] == "ok"
-    assert renewed != before and auth.read_bytes() == renewed  # Harvey never wrote it
+    assert renewed != before and auth.read_bytes() == renewed  # Mariana never wrote it
 
 
 @pytest.mark.asyncio
@@ -422,7 +422,7 @@ async def test_no_final_answer_escalates_to_a_human_without_replying(harvey):
 
 
 def _load_pre_codex_db(path: Path):
-    """A database written by Harvey 0.2.1 (before the Codex provider)."""
+    """A database written by Mariana 0.2.1 (before the Codex provider)."""
     con = sqlite3.connect(path)
     con.executescript((FIXTURES / "pre_codex_harvey_0_2_1.sql").read_text())
     con.close()
@@ -521,7 +521,7 @@ async def test_instantly_path_leaves_the_reply_unprocessed_when_the_brain_is_dow
     state = StateManager(str(tmp_path / "i.db"))
     await state.init_db()
     _, convo_id = await _open_thread(state)
-    config = HarveyConfig(**{**BASE, "channels": {"email": {"provider": "instantly"}}})
+    config = MarianaConfig(**{**BASE, "channels": {"email": {"provider": "instantly"}}})
     handler = Handler(brain=_DownBrain(), state=state, config=config, env=EnvConfig())
     campaign = Campaign(id="c1", name="c", channel="email", sequence=[], prospect_ids=[],
                         status="active", instantly_campaign_id="ic-1")
@@ -593,7 +593,7 @@ async def test_instantly_reply_survives_an_outage_while_drafting(harvey):
 
     await harvey.state.init_db()
     _, convo_id = await _open_thread(harvey.state)
-    config = HarveyConfig(**{**BASE, "channels": {"email": {"provider": "instantly"}},
+    config = MarianaConfig(**{**BASE, "channels": {"email": {"provider": "instantly"}},
                              "brain": {"provider": "codex", "model": "gpt-5.5"}})
     brain = Brain(harvey.state, config.brain)
     handler = Handler(brain=brain, state=harvey.state, config=config, env=EnvConfig())
@@ -685,7 +685,7 @@ async def test_a_reply_cancels_its_due_follow_up_before_the_send_phase(harvey):
     await harvey.run_cycles(1)
     assert harvey.mail.sent == []
     assert len(await harvey.state.get_outbox(status="cancelled")) == 1
-    assert len(await harvey.state.get_outbox(status="pending_review")) == 1  # Harvey's answer
+    assert len(await harvey.state.get_outbox(status="pending_review")) == 1  # Mariana's answer
     assert await harvey.state.is_reply_processed("in-1")
 
 

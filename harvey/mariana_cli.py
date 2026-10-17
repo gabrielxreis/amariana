@@ -1,6 +1,6 @@
 """Mariana's own commands: onboarding, signature, email and WhatsApp checks.
 
-Kept apart from cli.py so the upstream Harvey commands stay untouched.
+Kept apart from cli.py so the upstream Mariana commands stay untouched.
 """
 
 from __future__ import annotations

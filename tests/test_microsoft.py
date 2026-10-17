@@ -17,7 +17,7 @@ class Env:
 
 
 class Graph:
-    """A tiny fake of the Graph + login endpoints Harvey uses."""
+    """A tiny fake of the Graph + login endpoints Mariana uses."""
 
     def __init__(self):
         self.requests = []
@@ -223,7 +223,7 @@ async def test_not_authorized_raises(graph):
     microsoft.TOKEN_FILE.unlink()
     p = provider(graph)
     assert not p.is_configured()
-    with pytest.raises(GraphError, match="harvey microsoft auth"):
+    with pytest.raises(GraphError, match="mariana microsoft auth"):
         await p.get_replies()
 
 

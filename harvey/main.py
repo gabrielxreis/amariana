@@ -1,4 +1,4 @@
-"""Harvey's main heartbeat loop. Always Be Closing."""
+"""Mariana's main heartbeat loop. Always Be Closing."""
 
 import asyncio
 import logging
@@ -9,7 +9,7 @@ from datetime import datetime, time, timedelta
 import pytz
 
 from harvey.brain import Brain
-from harvey.config import ConfigError, load_config, load_env, HarveyConfig
+from harvey.config import ConfigError, load_config, load_env, MarianaConfig
 from harvey.pipeline import run_profile_stage
 from harvey.state import StateManager
 
@@ -28,13 +28,13 @@ ERROR_BACKOFF_CAP = 900
 # gather() only isolates a task that raises — a task that hangs (a socket or
 # lock that never resolves) blocks gather() forever, taking the whole
 # heartbeat loop down silently with it. This is the only thing standing
-# between one stuck agent and Harvey freezing for hours with no agent
+# between one stuck agent and Mariana freezing for hours with no agent
 # knowing it's dead — found in production after exactly that happened.
 CYCLE_TIMEOUT_SECONDS = 600
 
 # Cap on a single quiet-hours sleep chunk. See the quiet-hours block in
 # heartbeat() for why this exists — a system sleep/wake cycle during one
-# multi-hour asyncio.wait_for left Harvey silently stalled well past when
+# multi-hour asyncio.wait_for left Mariana silently stalled well past when
 # quiet hours actually ended.
 QUIET_HOURS_POLL_SECONDS = 300
 
@@ -42,7 +42,7 @@ QUIET_HOURS_POLL_SECONDS = 300
 REPLY_READERS = ("handle_replies", "read_replies")
 
 
-def in_quiet_hours(config: HarveyConfig) -> bool:
+def in_quiet_hours(config: MarianaConfig) -> bool:
     """Check if we're currently in quiet hours."""
     qh = config.usage.quiet_hours
     tz = pytz.timezone(qh.timezone)
@@ -57,7 +57,7 @@ def in_quiet_hours(config: HarveyConfig) -> bool:
         return now >= start or now <= end
 
 
-def seconds_until_quiet_hours_end(config: HarveyConfig) -> int:
+def seconds_until_quiet_hours_end(config: MarianaConfig) -> int:
     """Calculate seconds until quiet hours end."""
     qh = config.usage.quiet_hours
     tz = pytz.timezone(qh.timezone)
@@ -76,10 +76,10 @@ def seconds_until_quiet_hours_end(config: HarveyConfig) -> int:
 async def decide_next_action(
     brain: Brain,
     state: StateManager,
-    config: HarveyConfig,
+    config: MarianaConfig,
     summary: dict | None = None,
 ) -> str:
-    """Decide what Harvey should do next based on current state.
+    """Decide what Mariana should do next based on current state.
 
     Uses deterministic priority rules (handle_replies > send_campaign >
     write_campaign > prospect > idle) instead of burning a Claude call on a
@@ -156,7 +156,7 @@ async def _interruptible_sleep(seconds: float, stop_event: asyncio.Event) -> boo
 
 
 async def heartbeat(stop_event: asyncio.Event | None = None):
-    """Harvey's main loop. Wakes up, decides, acts, sleeps. Repeat."""
+    """Mariana's main loop. Wakes up, decides, acts, sleeps. Repeat."""
     if stop_event is None:
         stop_event = asyncio.Event()
 
@@ -234,7 +234,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             problem = await brain.preflight()
             if problem:
                 logger.error(
-                    f"Harvey is paused: {problem} Nothing was sent or changed. "
+                    f"Mariana is paused: {problem} Nothing was sent or changed. "
                     f"Re-checking in {config.usage.heartbeat_interval_minutes} minutes."
                 )
                 if await _interruptible_sleep(interval, stop_event):
@@ -242,7 +242,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
                 continue
 
             # 3. Check usage budget (real subscription quota when readable,
-            # else Harvey's own call counter)
+            # else Mariana's own call counter)
             if not await brain.is_within_budget(
                 max_calls, max_percent=config.usage.max_daily_claude_percent
             ):
@@ -365,7 +365,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
 
 
 def _needs_setup() -> bool:
-    """Check if Harvey needs first-time setup."""
+    """Check if Mariana needs first-time setup."""
     from harvey.paths import PROJECT_ROOT
     from harvey.config import _find_config_file, ConfigFileNotFoundError
 
@@ -423,7 +423,7 @@ def main():
     """Entry point."""
     # Check for first-time setup
     if _needs_setup():
-        print("\n  First time running Harvey? Let's get you set up.\n")
+        print("\n  First time running Mariana? Let's get you set up.\n")
         from harvey.setup import run_setup
         asyncio.run(run_setup())
         return

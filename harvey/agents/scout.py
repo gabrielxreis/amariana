@@ -36,7 +36,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from harvey.brain import Brain
-from harvey.config import HarveyConfig, EnvConfig
+from harvey.config import MarianaConfig, EnvConfig
 from harvey.integrations.email_finder import find_email
 from harvey.integrations.linkedin import LinkedInAutomation
 from harvey.models.company import Company
@@ -104,7 +104,7 @@ class Scout:
         self,
         brain: Brain,
         state: StateManager,
-        config: HarveyConfig,
+        config: MarianaConfig,
         env: EnvConfig,
     ):
         self.brain = brain
@@ -575,7 +575,7 @@ class Scout:
     async def _prospect_via_known_companies(self) -> int:
         """Scrape team pages for companies already on file with no contacts.
 
-        Company-only sources (`harvey discover`, directory scraping, etc.)
+        Company-only sources (`mariana discover`, directory scraping, etc.)
         add rows to `companies` without ever finding a named person there.
         Left alone, those companies never get a contacts pass — every other
         strategy here skips a domain the moment it recognizes it, since

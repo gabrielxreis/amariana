@@ -1,26 +1,26 @@
-# Messages outside email: WhatsApp, LinkedIn, Instagram
+# Mensagens fora do email: WhatsApp, LinkedIn, Instagram
 
-## Which channel, by market
-- **Brazil**: email + WhatsApp. WhatsApp is how Brazilian businesses actually talk; a short, human message from a filmmaker is normal there.
-- **USA and the rest of the world**: email + LinkedIn. Cold WhatsApp from an unknown foreign number reads as spam abroad. LinkedIn is where business outreach is expected.
-- **Instagram DM**: for anyone whose Instagram is linked from their site, when the main channel is not available. Best for creators, restaurants, gyms, churches.
+## Qual canal, por mercado
+- **Brasil:** email + WhatsApp. É no WhatsApp que as empresas brasileiras conversam de verdade; uma mensagem curta e humana de um filmmaker é normal lá.
+- **EUA e resto do mundo:** email + LinkedIn. WhatsApp frio de um número estrangeiro desconhecido parece spam lá fora. No LinkedIn, contato comercial é esperado.
+- **DM no Instagram:** para quem tem o Instagram no site, quando o canal principal não está disponível. Funciona melhor com criadores, restaurantes, academias e igrejas.
 
-## WhatsApp (Brazil)
-- Max ~70 words, two short paragraphs. Greeting with the first name when known.
-- Say who you are in one line (nome + filmmaker / editor de vídeo).
-- One observation, one question. No link, no price, no audio, no emoji walls.
-- Sent by the filmmaker from their own WhatsApp (link opened from the dashboard). Never send in bulk, never from an automation.
-- If they don't answer, do not send a second WhatsApp. The email sequence continues.
+## WhatsApp (Brasil)
+- No máximo ~70 palavras, dois parágrafos curtos. Saudação com o primeiro nome quando tiver.
+- Diga quem você é em uma linha (nome + filmmaker / editor de vídeo).
+- Uma observação, uma pergunta. Sem link, sem preço, sem áudio, sem enxurrada de emoji.
+- Enviada pela própria pessoa, do WhatsApp dela (o painel abre com o texto pronto). Nunca em massa, nunca por automação.
+- Se não responderem, não mande um segundo WhatsApp. A sequência de email continua.
 
-## LinkedIn (abroad)
-- Connection note: under 300 characters, no pitch. Why connecting makes sense ("I edit event films for churches in Texas and saw your conference is coming up").
-- First message after accepting: under 90 words, observation + question.
-- Write to the person (founder, marketing lead, communications/media director, pastor), not to the company page, whenever a person is known.
+## LinkedIn (exterior)
+- Nota do convite: menos de 300 caracteres, sem vender. Por que faz sentido se conectar ("edito filmes de evento para igrejas no Texas e vi que a conferência de vocês está chegando").
+- Primeira mensagem depois que aceitarem: menos de 90 palavras, observação + pergunta.
+- Escreva para a pessoa (fundador, marketing, diretor de comunicação ou mídia, pastor), não para a página da empresa, sempre que houver uma pessoa.
 
-## Instagram DM
-- Under 60 words, casual, about their content (from the notes only).
-- Never comment-spam or mass-follow.
+## DM no Instagram
+- Menos de 60 palavras, leve, sobre o conteúdo deles (só das notas).
+- Nunca comente em massa nem siga em massa.
 
-## Always
-- Each person gets ONE non-email message. If they reply anywhere, every other queued message is cancelled.
-- Opt-out on any channel is an opt-out on all channels.
+## Sempre
+- Cada pessoa recebe UMA mensagem fora do email. Se responder em qualquer canal, todas as outras mensagens na fila são canceladas.
+- Pedido de não contato em um canal vale para todos.

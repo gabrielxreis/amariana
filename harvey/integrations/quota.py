@@ -3,7 +3,7 @@
 Reads the real 5-hour-window and weekly utilization the same way Claude
 Code's own /usage command does: GET api.anthropic.com/api/oauth/usage with
 the locally-stored OAuth token. The endpoint is undocumented, so every
-failure degrades to None and callers fall back to Harvey's own call
+failure degrades to None and callers fall back to Mariana's own call
 counting. Responses are cached in-memory to stay polite.
 """
 

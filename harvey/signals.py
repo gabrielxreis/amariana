@@ -1,6 +1,6 @@
-"""The signal vocabulary Harvey proposes, and the user confirms.
+"""The signal vocabulary Mariana proposes, and the user confirms.
 
-Harvey never decides on its own what makes a good prospect. It proposes a
+Mariana never decides on its own what makes a good prospect. It proposes a
 catalog of signals it knows how to collect — each with a plain-language
 description, what it costs, and why it might matter — and the user confirms,
 edits, or rejects them in the dashboard before any collection runs.
@@ -38,7 +38,7 @@ SIGNAL_CATALOG: list[dict] = [
     {
         "code": "FOUND_IN_SERP",
         "label": "Discovered via search",
-        "description": "The business appeared in a target-market search — how Harvey found it at all.",
+        "description": "The business appeared in a target-market search — how Mariana found it at all.",
         "category": "discovery",
         "value_type": "text",
         "collector": "discover",
@@ -102,7 +102,7 @@ SIGNAL_CATALOG: list[dict] = [
         "confidence_floor": 0.0,
     },
 
-    # ── Profile: what they are (free — HTML Harvey already fetches) ──
+    # ── Profile: what they are (free — HTML Mariana already fetches) ──
     {
         "code": "INCUMBENT_AGENCY",
         "label": "Has a marketing/web agency",
@@ -350,6 +350,112 @@ SIGNAL_CATALOG: list[dict] = [
         "confidence_floor": 0.0,
     },
 ]
+
+
+# Textos em português do Brasil mostrados no painel e no terminal. Os códigos
+# (SERP_RANK, NO_VIDEO_ON_SITE...) não mudam: são a chave interna.
+_PT_BR = {
+    "SERP_RANK": ("Posição na busca",
+        "Onde a empresa aparece na busca do próprio serviço ('<serviço> <cidade>'). "
+        "Posições 11 a 30 são o ponto ideal: visíveis o bastante para estarem "
+        "tentando, sem estar ganhando ainda. Top 10 já ganha (venda mais difícil); "
+        "31+ é mais barato, mas menos motivado.",
+        "~US$ 0,0006 por busca (API de busca paga)"),
+    "FOUND_IN_SERP": ("Encontrada pela busca",
+        "A empresa apareceu numa busca do mercado-alvo: foi assim que a Mariana a achou.",
+        "incluído na busca acima"),
+    "NO_WEBSITE": ("Sem site",
+        "Tem cadastro e telefone, mas não tem site. Dá para filtrar direto, sem adivinhar.",
+        "incluído na consulta de empresas"),
+    "UNCLAIMED_LISTING": ("Perfil do Google não reivindicado",
+        "Ninguém reivindicou o Perfil da Empresa no Google: não cuidam de como aparecem localmente.",
+        "incluído na consulta de empresas"),
+    "REVIEW_RATING": ("Nota das avaliações",
+        "A média de estrelas. Serve para os dois lados: nota baixa é problema de "
+        "reputação; nota alta com poucas avaliações é prova de que são bons, mas invisíveis.",
+        "incluído na consulta de empresas"),
+    "REVIEW_COUNT": ("Número de avaliações",
+        "Quantas avaliações têm. Indica tamanho e o quanto cuidam da presença online.",
+        "incluído na consulta de empresas"),
+    "INCUMBENT_AGENCY": ("Tem agência de marketing/site",
+        "Agência creditada no rodapé do site ('Site por X'). Diz quem já atende a conta. "
+        "Só é registrado quando o crédito é explícito: agência errada é pior que nenhuma.",
+        "grátis (página inicial)"),
+    "RUNNING_GOOGLE_ADS": ("Anunciando no Google",
+        "Tag do Google Ads no site: estão gastando com aquisição HOJE. Sinal forte de verba "
+        "e de que precisam de criativo.",
+        "grátis (página inicial)"),
+    "RUNNING_META_ADS": ("Anunciando no Instagram/Facebook",
+        "Pixel da Meta no site: anunciam nas redes. Precisam renovar vídeo de anúncio com frequência.",
+        "grátis (página inicial)"),
+    "TECH_STACK": ("Plataforma e ferramentas do site",
+        "Em que o site é feito e que ferramentas usa (WordPress, Shopify, chat, agendamento).",
+        "grátis (página inicial)"),
+    "NO_SCHEMA_MARKUP": ("Sem dados estruturados",
+        "Sem marcação JSON-LD: uma lacuna de SEO concreta e verificável.",
+        "grátis (página inicial)"),
+    "NO_ONLINE_BOOKING": ("Sem agendamento online",
+        "Nenhum agendamento no site: o cliente precisa ligar. Um vídeo do atendimento ajuda quem está em dúvida.",
+        "grátis (página inicial)"),
+    "SITE_PAGE_COUNT": ("Tamanho do site",
+        "Número de páginas do sitemap.xml. Site muito magro indica pouco investimento; "
+        "grande e parado indica abandono.",
+        "grátis (sitemap.xml)"),
+    "BLOG_STALE": ("Conteúdo parado",
+        "Nada novo há muito tempo: começaram a produzir conteúdo e pararam.",
+        "grátis (sitemap.xml)"),
+    "BLOCKS_AI_CRAWLERS": ("Bloqueia robôs de IA",
+        "O robots.txt bloqueia robôs de IA: não vão aparecer nas respostas de buscas com IA.",
+        "grátis (robots.txt)"),
+    "HIRING_ROLE": ("Contratando para uma função relevante",
+        "Vaga aberta (social media, editor de vídeo, videomaker, marketing) que indica "
+        "necessidade agora.",
+        "grátis (página de vagas)"),
+    "CONTACT_FOUND": ("Contato com nome",
+        "Uma pessoa com nome e cargo, tirada da página de equipe.",
+        "grátis (página de equipe)"),
+    "DECISION_MAKER_TITLE": ("Cargo de quem decide",
+        "O cargo bate com dono/decisor (dono, fundador, diretor, pastor, diretor de marketing).",
+        "grátis (página de equipe)"),
+    "REGISTRY_VERIFIED": ("Confirmado em registro público",
+        "A pessoa foi confirmada num registro público oficial. Também filtra erros de "
+        "leitura: um nome que não bate com nada geralmente não era uma pessoa.",
+        "grátis (API de registro público)"),
+    "LIKELY_OWNER": ("Provavelmente o dono",
+        "Indícios do registro mostram que a pessoa é dona do negócio, não funcionária.",
+        "grátis (API de registro público)"),
+    "EMAIL_PATTERN": ("Padrão de email da empresa",
+        "O formato dos endereços do domínio (nome.sobrenome@, nsobrenome@). Um endereço "
+        "real abre a empresa inteira.",
+        "grátis, ou ~1 crédito de consulta"),
+    "EMAIL_STATUS": ("Entregabilidade do email",
+        "Se o endereço está verificado, aceita tudo (arriscado), é um chute ou é inválido.",
+        "1 crédito de verificação (há planos grátis)"),
+    "NO_VIDEO_ON_SITE": ("Sem vídeo no site",
+        "A página inicial não tem nenhum vídeo (YouTube, Vimeo ou player). Para quem filma "
+        "ou edita, é a lacuna mais clara: vendem algo visual e mostram só com foto.",
+        "grátis (página inicial)"),
+    "HAS_YOUTUBE_CHANNEL": ("Tem canal no YouTube",
+        "O site linka um canal do YouTube. Já acreditam em vídeo; o ângulo é qualidade, "
+        "constância ou volume de edição.",
+        "grátis (página inicial)"),
+    "INSTAGRAM_PROFILE": ("Perfil no Instagram",
+        "O Instagram da empresa, linkado no site. Onde ficam os Reels, e um canal para "
+        "mandar DM quando não há email.",
+        "grátis (página inicial)"),
+    "LINKEDIN_COMPANY": ("Página no LinkedIn",
+        "A página da empresa no LinkedIn, linkada no site. Usada para falar com decisores "
+        "no exterior, onde o LinkedIn é o canal normal de contato comercial.",
+        "grátis (página inicial)"),
+    "CONTACT_FORM_URL": ("Formulário de contato",
+        "Um formulário no site. Chega na empresa sem precisar de email, e cerca de metade "
+        "dos domínios não deixa verificar email.",
+        "grátis (site)"),
+}
+
+for _sig in SIGNAL_CATALOG:
+    if _sig["code"] in _PT_BR:
+        _sig["label"], _sig["description"], _sig["cost_note"] = _PT_BR[_sig["code"]]
 
 
 async def seed_signal_catalog(state) -> int:

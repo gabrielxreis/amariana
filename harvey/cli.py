@@ -1,4 +1,4 @@
-"""Harvey CLI — simple commands to install, setup, run, and manage Harvey."""
+"""Mariana CLI — simple commands to install, setup, run, and manage Mariana."""
 
 import argparse
 import asyncio
@@ -11,10 +11,10 @@ MIN_PYTHON = (3, 11)
 
 
 def _check_python_version():
-    """Refuse to install on a Python that cannot run Harvey.
+    """Refuse to install on a Python that cannot run Mariana.
 
     `python3 -m venv .venv` on macOS builds the venv from /usr/bin/python3,
-    which is 3.9 — old enough that Harvey's `X | Y` type syntax fails at
+    which is 3.9 — old enough that Mariana's `X | Y` type syntax fails at
     import. The install itself appears to succeed and the failure surfaces
     later as an unrelated-looking ImportError, so check up front and name the
     fix.
@@ -24,7 +24,7 @@ def _check_python_version():
 
     have = f"{sys.version_info.major}.{sys.version_info.minor}"
     want = f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}"
-    print(f"\n  Harvey needs Python {want} or newer. This is Python {have}.")
+    print(f"\n  Mariana needs Python {want} or newer. This is Python {have}.")
     print(f"  ({sys.executable})\n")
     print("  On macOS, `python3` is usually the system 3.9, so a venv built")
     print("  with it is 3.9 too. Build the venv from a newer Python instead:\n")
@@ -38,7 +38,7 @@ def _check_python_version():
 def cmd_install(args):
     """Install all dependencies including Playwright browsers."""
     _check_python_version()
-    print("\n  Installing Harvey dependencies...\n")
+    print("\n  Installing Mariana dependencies...\n")
 
     # Install Python packages
     print("  [1/2] Installing Python packages...")
@@ -75,7 +75,7 @@ def cmd_install(args):
         print("  ✓ Playwright browsers installed.\n")
 
     _ensure_importable(args._project_root)
-    print("  Harvey is installed. Run 'harvey setup' next.\n")
+    print("  Mariana is installed. Run 'mariana setup' next.\n")
 
 
 def _ensure_importable(project_root: str):
@@ -125,14 +125,14 @@ def cmd_setup(args):
 
 
 def cmd_run(args):
-    """Start Harvey's heartbeat loop."""
+    """Start Mariana's heartbeat loop."""
     from harvey.main import main
 
     main()
 
 
 def cmd_train(args):
-    """Train Harvey on a website."""
+    """Train Mariana on a website."""
     from harvey.trainer import Trainer
 
     url = args.url.strip()
@@ -190,7 +190,7 @@ def cmd_status(args):
         await state.init_db()
         summary = await state.get_state_summary()
 
-        print("\n  Harvey Pipeline Status")
+        print("\n  Mariana Pipeline Status")
         print("  " + "=" * 40)
         print(f"  Prospects:            {summary['prospects']}")
         print(f"  Draft campaigns:      {summary['draft_campaigns']}")
@@ -237,7 +237,7 @@ def cmd_status(args):
         return healthy
 
     if not asyncio.run(_status()):
-        # `harvey status --check` failing is something scripts can act on.
+        # `mariana status --check` failing is something scripts can act on.
         raise SystemExit(1)
 
 
@@ -363,7 +363,7 @@ def cmd_export(args):
         print(f"\n  Exported {count} prospect(s) to {args.out}  ({scope})")
         if count == 0 and not args.all:
             print("  Tip: no deliverable emails yet? Add a REOON_API_KEY to .env so")
-            print("  Harvey can verify addresses, or use --all for the raw list.\n")
+            print("  Mariana can verify addresses, or use --all for the raw list.\n")
         else:
             print("  The CSV imports directly into Instantly, Smartlead, or any sequencer.\n")
 
@@ -438,7 +438,7 @@ def cmd_outbox(args):
         paused = await state.get_setting("sending_paused")
         if paused:
             print(f"\n  ⚠ SENDING PAUSED: {paused}")
-            print("  Resume with: harvey sending resume")
+            print("  Resume with: mariana sending resume")
 
         pending = await state.get_outbox(status="pending_review", limit=50)
         approved = await state.get_outbox(status="approved", limit=10)
@@ -453,8 +453,8 @@ def cmd_outbox(args):
             for line in body_preview.splitlines():
                 print(f"    {line}")
         if pending:
-            print("\n  Approve: harvey outbox --approve <id>   |   all: harvey outbox --approve-all")
-            print("  Reject:  harvey outbox --reject <id>\n")
+            print("\n  Approve: mariana outbox --approve <id>   |   all: mariana outbox --approve-all")
+            print("  Reject:  mariana outbox --reject <id>\n")
         else:
             print("  Nothing awaiting review.\n")
 
@@ -481,7 +481,7 @@ def cmd_profile(args):
         companies, observations, _ = await run_profile_stage(
             state, limit=args.limit, stale_days=args.stale_days)
         print(f"  Read {companies} sites → {observations} observations (free)")
-        print("\n  See what turned up: harvey dashboard → Signals\n")
+        print("\n  See what turned up: mariana dashboard → Signals\n")
 
     asyncio.run(_profile())
 
@@ -508,12 +508,12 @@ def cmd_discover(args):
                     print(f"    Needs: {', '.join(m['env_keys'])} in .env  —  {m['signup_url']}")
                 if m["caveat"]:
                     print(f"    Note: {m['caveat']}")
-            print("\n  Run one with: harvey discover --provider <key> --estimate\n")
+            print("\n  Run one with: mariana discover --provider <key> --estimate\n")
             return
 
         if args.provider not in PROVIDERS:
             print(f"\n  Unknown provider {args.provider!r}. "
-                  f"See: harvey discover --providers\n")
+                  f"See: mariana discover --providers\n")
             return
 
         config = load_config()
@@ -566,13 +566,13 @@ def cmd_discover(args):
 
         for err in result.errors[:5]:
             print(f"    ! {err}")
-        print("\n  Next: harvey dashboard → Signals → cohort builder\n")
+        print("\n  Next: mariana dashboard → Signals → cohort builder\n")
 
     asyncio.run(_discover())
 
 
 def cmd_signals(args):
-    """Review the signal vocabulary — Harvey proposes, you confirm.
+    """Review the signal vocabulary — Mariana proposes, you confirm.
 
     Nothing is collected until a signal is confirmed, so a fresh install
     prospects against nothing until someone makes these decisions.
@@ -596,7 +596,7 @@ def cmd_signals(args):
                 # substring match would sweep in "1 credit (free tiers
                 # available)", which is not free.
                 codes = [c["code"] for c in await state.get_signal_codes()
-                         if (c["cost_note"] or "").lower().startswith(("free", "included"))]
+                         if (c["cost_note"] or "").lower().startswith(("free", "included", "grátis", "incluído"))]
             changed = sum(
                 [1 for c in codes if await state.set_signal_status(c, status)]
             )
@@ -625,9 +625,9 @@ def cmd_signals(args):
             print(f"          {r['cost_note']}")
 
         if by_status["proposed"]:
-            print("\n  Confirm with: harvey signals --confirm CODE[,CODE...]")
-            print("  Everything free: harvey signals --confirm free")
-            print("  Details and descriptions: harvey dashboard → Signals\n")
+            print("\n  Confirm with: mariana signals --confirm CODE[,CODE...]")
+            print("  Everything free: mariana signals --confirm free")
+            print("  Details and descriptions: mariana dashboard → Signals\n")
         else:
             print("")
 
@@ -665,20 +665,20 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    # harvey install
+    # mariana install
     sub = subparsers.add_parser("install", help="Install dependencies")
     sub.set_defaults(func=cmd_install)
 
-    # harvey setup
+    # mariana setup
     sub = subparsers.add_parser("setup", help="Run the interactive setup wizard")
     sub.set_defaults(func=cmd_setup)
 
-    # harvey run
-    sub = subparsers.add_parser("run", help="Start Harvey's heartbeat loop")
+    # mariana run
+    sub = subparsers.add_parser("run", help="Start Mariana's heartbeat loop")
     sub.set_defaults(func=cmd_run)
 
-    # harvey train <url>
-    sub = subparsers.add_parser("train", help="Train Harvey on a website")
+    # mariana train <url>
+    sub = subparsers.add_parser("train", help="Train Mariana on a website")
     sub.add_argument("url", help="Website URL to crawl and learn from")
     sub.add_argument(
         "max_pages",
@@ -698,13 +698,13 @@ def main():
     )
     sub.set_defaults(func=cmd_train)
 
-    # harvey dashboard
+    # mariana dashboard
     sub = subparsers.add_parser("dashboard", help="Open the web dashboard")
     sub.add_argument("--host", default="127.0.0.1", help="Host (default: 127.0.0.1)")
     sub.add_argument("--port", type=int, default=5555, help="Port (default: 5555)")
     sub.set_defaults(func=cmd_dashboard)
 
-    # harvey status
+    # mariana status
     sub = subparsers.add_parser("status", help="Show pipeline status")
     sub.add_argument(
         "--check", action="store_true",
@@ -713,7 +713,7 @@ def main():
     )
     sub.set_defaults(func=cmd_status)
 
-    # harvey export
+    # mariana export
     sub = subparsers.add_parser(
         "export", help="Export prospects as a sequencer-ready CSV"
     )
@@ -727,26 +727,26 @@ def main():
     sub.add_argument("--all", action="store_true", help="Export everything, no filters")
     sub.set_defaults(func=cmd_export)
 
-    # harvey gmail auth|test
+    # mariana gmail auth|test
     sub = subparsers.add_parser("gmail", help="Gmail provider setup")
     sub.add_argument("gmail_action", choices=["auth", "test"],
                      help="auth: one-time OAuth; test: verify connection")
     sub.set_defaults(func=cmd_gmail)
 
-    # harvey microsoft auth|test
+    # mariana microsoft auth|test
     sub = subparsers.add_parser("microsoft", help="Microsoft 365 provider setup")
     sub.add_argument("microsoft_action", choices=["auth", "test"],
                      help="auth: one-time sign-in; test: verify connection")
     sub.set_defaults(func=cmd_microsoft)
 
-    # harvey outbox
+    # mariana outbox
     sub = subparsers.add_parser("outbox", help="Review/approve queued emails")
     sub.add_argument("--approve", metavar="ID", default="", help="Approve one item")
     sub.add_argument("--approve-all", action="store_true", help="Approve all pending")
     sub.add_argument("--reject", metavar="ID", default="", help="Reject one item")
     sub.set_defaults(func=cmd_outbox)
 
-    # harvey sending pause|resume|status
+    # mariana sending pause|resume|status
     sub = subparsers.add_parser("discover", help="Find businesses matching your ICP")
     sub.add_argument("--provider", default="osm",
                      help="Discovery provider (default: osm — free, no account)")
@@ -776,7 +776,7 @@ def main():
     sub.set_defaults(func=cmd_profile)
 
     sub = subparsers.add_parser(
-        "signals", help="Review/confirm which signals Harvey prospects against")
+        "signals", help="Review/confirm which signals Mariana prospects against")
     sub.add_argument("--confirm", metavar="CODES", default="",
                      help="Comma-separated codes to confirm ('all' or 'free' accepted)")
     sub.add_argument("--reject", metavar="CODES", default="",
@@ -788,7 +788,7 @@ def main():
                      choices=["pause", "resume", "status"])
     sub.set_defaults(func=cmd_sending)
 
-    # harvey usage
+    # mariana usage
     sub = subparsers.add_parser("usage", help="Show brain usage and quota (Claude or Codex)")
     sub.add_argument("--days", type=int, default=30, help="Breakdown window (default: 30)")
     sub.set_defaults(func=cmd_usage)

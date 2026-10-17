@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "harvey"
+name = "mariana"
 version = "0.3.0"
-description = "Mariana: AI booking assistant that closes filming and editing jobs. Fork of Harvey."
+description = "Mariana: secretária de IA que fecha trabalhos de audiovisual e edição."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -41,13 +41,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ethanplusai/harvey"
-Issues = "https://github.com/ethanplusai/harvey/issues"
-Changelog = "https://github.com/ethanplusai/harvey/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/gabrielxreis/amariana"
+Issues = "https://github.com/gabrielxreis/amariana/issues"
+Changelog = "https://github.com/gabrielxreis/amariana/blob/main/CHANGELOG.md"
 
 [project.scripts]
 mariana = "harvey.cli:main"
-harvey = "harvey.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["harvey*"]

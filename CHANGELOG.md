@@ -13,4 +13,4 @@
 - Proposta em PDF, Google Agenda real, portfólio por segmento, radar de eventos, amostras com o /ogab, pós-job, avisos no celular, abas Jobs e Números
 
 ## 0.1.0
-- Fork do Harvey: onboarding, assinatura de email, email-check, canais por mercado (Brasil WhatsApp, exterior LinkedIn), sinais de audiovisual
+- Primeira versão: onboarding, assinatura de email, email-check, canais por mercado (Brasil WhatsApp, exterior LinkedIn), sinais de audiovisual

@@ -1,4 +1,4 @@
-"""Configuration loader for Harvey. Reads harvey.yaml + .env."""
+"""Configuration loader for Mariana. Reads harvey.yaml + .env."""
 
 import logging
 import os
@@ -16,7 +16,7 @@ logger = logging.getLogger("harvey.config")
 
 
 class ConfigError(Exception):
-    """Raised when Harvey's configuration is missing or invalid."""
+    """Raised when Mariana's configuration is missing or invalid."""
 
 
 class ConfigFileNotFoundError(ConfigError, FileNotFoundError):
@@ -105,7 +105,7 @@ class EmailChannelConfig(BaseModel):
     # guess still bounces.
     send_to_risky: bool = False
     # Copilot mode (native providers): every outgoing email waits in the
-    # outbox for your approval (dashboard → Outbox, or `harvey outbox`).
+    # outbox for your approval (dashboard → Outbox, or `mariana outbox`).
     # Set false for full autopilot once you trust the output.
     require_approval: bool = True
     # Kill switch: pause all sending when bounces exceed this fraction of
@@ -195,7 +195,7 @@ class PreclearedConfig(BaseModel):
     enabled: bool = False
     # Where your business is based: GB or US. Required when enabled.
     sender_country: str = ""
-    # Where prospect addresses come from, in Precleared's terms. Harvey
+    # Where prospect addresses come from, in Precleared's terms. Mariana
     # builds most addresses from a learned pattern, so the honest default
     # is "unknown"; use "published" only if yours are copied from the
     # businesses' own websites.
@@ -288,11 +288,11 @@ _MODEL_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/\[\]-]{0,127}$")
 
 
 class BrainConfig(BaseModel):
-    """Which subscription Harvey thinks with.
+    """Which subscription Mariana thinks with.
 
     ``claude`` (default) runs Claude Code headless on your Claude plan.
     ``codex`` runs Codex on your ChatGPT plan. There is never an automatic
-    fallback between them, and an explicit ``model`` only affects Harvey —
+    fallback between them, and an explicit ``model`` only affects Mariana —
     your own Claude Code / Codex settings are never read or changed.
     """
 
@@ -376,7 +376,7 @@ class ProductionConfig(BaseModel):
     default_revisions: int = 2
 
 
-class HarveyConfig(BaseModel):
+class MarianaConfig(BaseModel):
     persona: PersonaConfig
     product: ProductConfig
     icp: ICPConfig
@@ -437,8 +437,8 @@ def _format_validation_error(e: ValidationError) -> str:
     return "\n".join(lines)
 
 
-def load_config(config_path: str | None = None) -> HarveyConfig:
-    """Load Harvey configuration from YAML file.
+def load_config(config_path: str | None = None) -> MarianaConfig:
+    """Load Mariana configuration from YAML file.
 
     Raises ConfigError with a clear, actionable message on any problem.
     """
@@ -451,7 +451,7 @@ def load_config(config_path: str | None = None) -> HarveyConfig:
     except FileNotFoundError:
         raise ConfigFileNotFoundError(
             f"Config file not found: {config_path}. "
-            "Create one from harvey.yaml.example or run 'harvey setup'."
+            "Create one from harvey.yaml.example or run 'mariana setup'."
         )
     except yaml.YAMLError as e:
         raise ConfigError(f"Invalid YAML in {config_path}:\n  {e}")
@@ -459,7 +459,7 @@ def load_config(config_path: str | None = None) -> HarveyConfig:
         raise ConfigError(f"Could not read {config_path}: {e}")
 
     if data is None:
-        raise ConfigError(f"{config_path} is empty. Run 'harvey setup' to configure Harvey.")
+        raise ConfigError(f"{config_path} is empty. Run 'mariana setup' to configure Mariana.")
     if not isinstance(data, dict):
         raise ConfigError(
             f"{config_path} must contain a YAML mapping (key: value pairs), "
@@ -467,13 +467,13 @@ def load_config(config_path: str | None = None) -> HarveyConfig:
         )
 
     try:
-        return HarveyConfig(**data)
+        return MarianaConfig(**data)
     except ValidationError as e:
         # Log a friendly, actionable summary, then re-raise the original
         # ValidationError so callers (and tests) keep the pydantic type.
         logger.error(
             f"Invalid configuration in {config_path}:\n{_format_validation_error(e)}\n"
-            "Fix the fields above or re-run 'harvey setup'."
+            "Fix the fields above or re-run 'mariana setup'."
         )
         raise
 
@@ -551,7 +551,7 @@ def load_env() -> EnvConfig:
 
 
 def _find_config_file() -> str:
-    """Search for Harvey's config.
+    """Search for Mariana's config.
 
     ``harvey.local.yaml`` wins when present. It is gitignored, so a fork can
     carry a real product configuration (trained on an actual company) while
@@ -571,5 +571,5 @@ def _find_config_file() -> str:
     raise ConfigFileNotFoundError(
         "harvey.yaml not found in "
         + ", ".join(str(p.parent) for p in candidates)
-        + ". Create one from harvey.yaml.example or run 'harvey setup'."
+        + ". Create one from harvey.yaml.example or run 'mariana setup'."
     )

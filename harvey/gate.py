@@ -100,7 +100,7 @@ def pre_send_check(
     if len(links) > MAX_LINKS:
         reasons.append(f"too many links ({len(links)} > {MAX_LINKS})")
 
-    # No HTML — Harvey sends plain text only
+    # No HTML — Mariana sends plain text only
     if re.search(r"<\s*(html|body|div|table|img|a)\b", body, re.IGNORECASE):
         reasons.append("HTML markup in body (plain text only)")
 

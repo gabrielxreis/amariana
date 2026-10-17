@@ -1,42 +1,42 @@
-# Selling filming and editing work
+# Vender filmagem e edição
 
-Knowledge for booking jobs for an independent filmmaker / video editor.
-Facts about THIS filmmaker (prices, clients, portfolio) live in harvey.yaml
-and product_knowledge.md. Never cite anything that is not there.
+Conhecimento para fechar trabalhos de um profissional independente de vídeo.
+Os fatos sobre ESTA pessoa (preços, clientes, portfólio) estão no config e no
+product_knowledge.md. Nunca cite nada que não esteja lá.
 
-## Who buys video, and the hook for each
+## Quem compra vídeo, e o gancho de cada um
 
-| Buyer | What they need | Best hook (only if the facts support it) |
+| Comprador | O que precisa | Melhor gancho (só se os fatos sustentarem) |
 |---|---|---|
-| Churches | Sunday service cuts, Reels from the sermon, conference/event aftermovie, testimonials | They stream or post services but the cuts are long, unsubtitled, or irregular |
-| Event venues, weddings, conferences | Aftermovie, same-day edit, highlight reel | An upcoming event, or past events shown only in photos |
-| Real estate | Property tours, broker presence videos, Reels | Listings with photos only, no walkthrough |
-| Clinics, gyms, restaurants, hotels | Institutional film, Reels, ads | No video on the site; Instagram with photos but few Reels |
-| Brands and product companies | Product film, launch video, paid-ads creatives | A launch, a new product line, ads running with weak creatives |
-| Marketing agencies, creators, coaches | Outsourced editing (volume), Reels packages, YouTube editing | Posting rhythm that dropped, a YouTube that stopped, hiring an editor |
-| Sports teams, leagues, athletes | Game-day content, behind the scenes, same-day social edits | A big game or event date |
-| International clients (US) | Remote editing, filming when they come to Brazil (events, games, productions in Rio/SP) | An event in Brazil; editing turnaround across time zones |
+| Igrejas | Cortes do culto, Reels da pregação, aftermovie de conferência, testemunhos | Transmitem ou postam o culto, mas os cortes são longos, sem legenda ou irregulares |
+| Espaços de evento, casamentos, conferências | Aftermovie, edição no mesmo dia, highlight | Um evento chegando, ou eventos passados mostrados só em foto |
+| Imobiliárias | Tour do imóvel, vídeo de apresentação do corretor, Reels | Anúncios só com foto, sem tour |
+| Clínicas, academias, restaurantes, hotéis | Institucional, Reels, anúncios | Site sem vídeo; Instagram com foto e poucos Reels |
+| Marcas e empresas de produto | Filme do produto, vídeo de lançamento, criativos para anúncio | Um lançamento, linha nova, anúncios rodando com criativo fraco |
+| Agências, criadores, mentores | Edição terceirizada (volume), pacotes de Reels, edição de YouTube | Ritmo de postagem que caiu, YouTube parado, vaga de editor aberta |
+| Times, ligas, atletas | Conteúdo de dia de jogo, bastidores, edição no mesmo dia para as redes | Um jogo ou evento grande com data |
+| Clientes do exterior (EUA) | Edição remota, gravação quando vêm ao Brasil (eventos, jogos, produções no Rio/SP) | Um evento no Brasil; prazo de edição aproveitando o fuso |
 
-## Angles that work
-- **The gap you can see**: "o site mostra o espaço só em foto", "the channel stopped posting in March". Concrete and checkable beats any compliment.
-- **The moment**: an event, launch, anniversary, season. Video is bought around dates.
-- **Volume and consistency** (editing clients): they already film, they lack time to edit. Sell the rhythm (X Reels a week), not the software.
-- **Result, not gear**: people understanding the service, a full house next event, bookings from Reels. Never talk cameras, lenses or software unless asked.
+## Ângulos que funcionam
+- **A lacuna que dá pra ver:** "o site mostra o espaço só em foto", "o canal parou de postar em março". Concreto e verificável vence qualquer elogio.
+- **O momento:** evento, lançamento, aniversário, temporada. Vídeo se compra perto de uma data.
+- **Volume e constância** (clientes de edição): eles já filmam, falta tempo para editar. Venda o ritmo (X Reels por semana), não o software.
+- **Resultado, não equipamento:** gente entendendo o serviço, casa cheia no próximo evento, agendamentos pelos Reels. Nunca fale de câmera, lente ou software, a menos que perguntem.
 
-## Objections
+## Objeções
 
-| They say | Answer shape |
+| Dizem | Como responder |
 |---|---|
-| "Já temos alguém que filma" / "We have someone" | Respect it. Offer the part that is usually missing: editing volume, Reels cuts, an event aftermovie. Ask what they wish they had more of. |
-| "Tá caro" / "Too expensive" | Ask what the video has to achieve. Offer a smaller first scope (one Reel package, one event) instead of discounting. Never invent a discount. |
-| "A gente faz no celular" / "We shoot on phones" | Phones are fine for daily content. Position editing (they film, you cut) or one hero piece a quarter. |
-| "Manda o portfólio" / "Send your reel" | Send the portfolio link from the signature/product info, plus one question about their project. |
-| "Agora não" / "Not now" | Ask when their next event or launch is, and offer to talk then. One follow-up, never chase. |
-| "Quanto custa?" / "How much?" | Starting price from the product info if listed, and that the exact number depends on the briefing. Offer a 15-minute call or a written proposal. |
+| "Já temos alguém que filma" | Respeite. Ofereça a parte que costuma faltar: volume de edição, cortes para Reels, um aftermovie. Pergunte o que gostariam de ter mais. |
+| "Tá caro" | Pergunte o que o vídeo precisa alcançar. Ofereça um primeiro escopo menor (um pacote de Reels, um evento) em vez de dar desconto. Nunca invente desconto. |
+| "A gente faz no celular" | Celular serve para o dia a dia. Posicione a edição (eles filmam, você corta) ou uma peça principal por trimestre. |
+| "Manda o portfólio" | Mande o link do portfólio do mesmo segmento, mais uma pergunta sobre o projeto deles. |
+| "Agora não" | Pergunte quando é o próximo evento ou lançamento e ofereça conversar perto da data. Um follow-up só, nunca insista. |
+| "Quanto custa?" | Preço de partida das informações do serviço, se houver, e que o valor exato depende do briefing. Ofereça uma call de 15 minutos ou uma proposta por escrito. |
 
-## What to collect before a quote (the briefing)
-1. What they want to make (aftermovie, Reels, institutional, ad, editing package)
-2. Date and location (or turnaround, for editing)
-3. Where it will be used (Instagram, YouTube, ads, event screen)
-4. Reference video they like
-5. Budget range, only if they bring it up
+## O que perguntar antes de orçar (o briefing)
+1. O que querem fazer (aftermovie, Reels, institucional, anúncio, pacote de edição)
+2. Data e local (ou prazo, no caso de edição)
+3. Onde vai ser usado (Instagram, YouTube, anúncios, telão do evento)
+4. Um vídeo de referência de que gostam
+5. Faixa de orçamento, só se eles tocarem no assunto

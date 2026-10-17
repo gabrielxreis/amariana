@@ -1,6 +1,6 @@
 """Dashboard API for the signal-confirmation gate, cohorts, and Today.
 
-These cover the contract the UI depends on: Harvey proposes signals, nothing
+These cover the contract the UI depends on: Mariana proposes signals, nothing
 is collected until a human confirms, and a confirmed set becomes a cohort
 query rather than a static list.
 """
@@ -32,7 +32,7 @@ def client(monkeypatch):
 
 
 def test_signals_seed_as_proposed_not_confirmed(client):
-    """Harvey proposes. Nothing is live until a human says so."""
+    """Mariana proposes. Nothing is live until a human says so."""
     data = client.get("/api/signals").json()
     assert data["total"] == len(SIGNAL_CATALOG)
     assert data["summary"]["proposed"] == len(SIGNAL_CATALOG)
@@ -230,21 +230,21 @@ def test_static_route_refuses_to_escape_the_web_directory(client):
 
 
 def test_cost_notes_are_machine_classifiable():
-    """`harvey signals --confirm free` and the dashboard's green/amber cost
+    """`mariana signals --confirm free` and the dashboard's green/amber cost
     chip both key off the cost note. A signal that costs credits must not
     read as free — that is how someone accidentally turns on paid collection.
     """
     paid = {"SERP_RANK", "EMAIL_STATUS", "EMAIL_PATTERN", "FOUND_IN_SERP"}
     for sig in SIGNAL_CATALOG:
-        free = sig["cost_note"].lower().startswith(("free", "included"))
+        free = sig["cost_note"].lower().startswith(("free", "included", "grátis", "incluído"))
         if sig["code"] in paid:
             continue
         assert free, f"{sig['code']} has an unclassifiable cost note: {sig['cost_note']!r}"
 
     serp = next(s for s in SIGNAL_CATALOG if s["code"] == "SERP_RANK")
-    assert not serp["cost_note"].lower().startswith("free")
+    assert not serp["cost_note"].lower().startswith(("free", "grátis"))
     email = next(s for s in SIGNAL_CATALOG if s["code"] == "EMAIL_STATUS")
-    assert not email["cost_note"].lower().startswith("free")
+    assert not email["cost_note"].lower().startswith(("free", "grátis"))
 
 
 def test_every_signal_has_a_category_the_ui_renders():

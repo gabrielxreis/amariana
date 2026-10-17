@@ -7,7 +7,7 @@ import pytest
 import pytz
 
 from harvey import portfolio
-from harvey.config import EnvConfig, HarveyConfig
+from harvey.config import EnvConfig, MarianaConfig
 from harvey.integrations.calendar import format_slots, free_slots
 from harvey.models.company import Company
 from harvey.models.prospect import Prospect
@@ -39,7 +39,7 @@ class FakeBrain:
         return self.json_result
 
 
-def _config(**extra) -> HarveyConfig:
+def _config(**extra) -> MarianaConfig:
     data = dict(
         persona={"name": "Ana Lima", "company": "Lima Filmes", "role": "Filmmaker",
                  "email": "ana@limafilmes.com.br", "linkedin": "", "tone": "direto"},
@@ -51,7 +51,7 @@ def _config(**extra) -> HarveyConfig:
         notify={"enabled": False},
     )
     data.update(extra)
-    return HarveyConfig(**data)
+    return MarianaConfig(**data)
 
 
 async def _db(tmp_path):

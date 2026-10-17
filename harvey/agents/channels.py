@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 from harvey import market
 from harvey.brain import Brain
-from harvey.config import HarveyConfig
+from harvey.config import MarianaConfig
 from harvey.integrations.whatsapp import (
     CloudAPIClient, is_probably_mobile, normalize_phone, wa_link,
 )
@@ -53,7 +53,7 @@ def open_url(item: dict) -> str:
 
 
 class ChannelsAgent:
-    def __init__(self, brain: Brain, state: StateManager, config: HarveyConfig, env=None):
+    def __init__(self, brain: Brain, state: StateManager, config: MarianaConfig, env=None):
         self.brain = brain
         self.state = state
         self.config = config

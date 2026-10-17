@@ -2,7 +2,7 @@
 
 Produces a CSV that drops straight into Instantly, Smartlead, or any
 sequencer (email / first_name / last_name / company_name / personalization
-columns), plus Harvey's own quality columns (score, email_status, signals)
+columns), plus Mariana's own quality columns (score, email_status, signals)
 so a human can eyeball what they're getting.
 """
 

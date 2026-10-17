@@ -1,88 +1,64 @@
-# Signal-Based Outreach Playbook
+# Prospecção por sinais
 
-The single biggest lever on cold-email reply rates is *relevance at the
-moment of need*. Emails that reference a real, current signal get **5-18%
-replies vs 1-3%** for generic ICP-matched outreach. Scout attaches signals
-to prospects (in `personalization_notes` and on the company record); this
-playbook says how to turn each signal into a first line that earns a reply.
+A maior alavanca na taxa de resposta de email frio é *relevância no momento da necessidade*. Mensagens que citam um sinal real e atual têm **5% a 18% de resposta, contra 1% a 3%** do contato genérico só por perfil. O Scout anexa sinais aos leads (nas notas de personalização e no cadastro da empresa); este guia diz como transformar cada sinal numa primeira linha que merece resposta.
 
-## The core rule
+## A regra principal
 
-The signal is the *reason you're emailing them today* — say it plainly, in
-the first sentence, as an observation. Never dress it up ("I was so
-impressed to see..."). Never claim more than the signal proves. If the only
-signal is "they exist and match the ICP," you don't have a signal — fall
-back to a role/industry problem observation, and keep it honest.
+O sinal é *o motivo de você escrever hoje*: diga de forma simples, na primeira frase, como uma observação. Nunca enfeite ("fiquei impressionado ao ver..."). Nunca afirme mais do que o sinal prova. Se o único "sinal" é "eles existem e batem com o perfil", você não tem sinal: use uma observação sobre um problema real da função ou do segmento, com honestidade.
 
-Every claim in the email must trace to a signal or a stored fact. No
-invented funding rounds, no "saw your post" unless the notes say so, no
-fabricated metrics. A wrong specific is worse than a right generic.
+Toda afirmação tem que vir de um sinal ou de um fato guardado. Nada de investimento inventado, "vi seu post" sem estar nas notas, números fabricados. Um detalhe específico errado é pior que um genérico certo.
 
-## Signal → angle map
+## Sinal → ângulo
 
-### Hiring signal (they're hiring for a relevant role)
-The strongest, most actionable signal. A company hiring a Head of Growth is
-buying growth tooling *right now*; the person you're emailing owns that
-problem this quarter.
+### Sem vídeo no site
+O sinal mais forte para quem vende vídeo. Eles vendem algo visual e mostram só com foto.
 
-- **Angle**: the workload behind the hire, not the hire itself.
-- **Good**: "Saw you're hiring a second SDR. Usually means the first one is
-  buried — how are you handling reply volume while the seat's open?"
-- **Bad**: "Congrats on the new role posting!" (flattery, no substance)
-- Only reference the specific role if the notes name it. "Hiring in growth"
-  is fine; inventing "hiring 3 AEs" is not.
+- **Ângulo:** o que a pessoa que visita o site não consegue entender só olhando foto.
+- **Bom:** "O site mostra o espaço só em foto. Quem nunca foi aí não tem ideia de como fica num evento cheio. Vocês já pensaram num vídeo curto disso?"
+- **Ruim:** "Seu site precisa de vídeo!" (julgamento, sem substância)
 
-### Tech-stack signal (a tool detected on their site)
-You know something concrete about how they operate. Use it to place your
-product in their actual stack, or to point at a gap.
+### Canal do YouTube ou Instagram
+Eles já acreditam em vídeo; a conversa é constância, qualidade ou volume.
 
-- **Angle**: integration, migration, or a gap next to what they run.
-- **Good (present)**: "You're on HubSpot — so this plugs into the workflow
-  your team already lives in rather than adding another tab."
-- **Good (gap)**: "Noticed there's no chat widget on your pricing page.
-  How are you catching the people who get that far but don't fill out the
-  form?"
-- **Bad**: listing their whole stack back at them (creepy, and it reads as
-  scraped). Reference at most one tool, and only if it's load-bearing to
-  the point.
+- **Ângulo:** o ritmo ou o formato, não "seus vídeos são ruins".
+- **Bom:** "Vi que o canal postava toda semana até março e parou. Costuma ser falta de tempo para editar, não de material. É isso?"
+- **Ruim:** listar tudo o que você viu nos perfis deles (assusta e parece robô).
 
-### Funding signal (recent raise)
-60-90 days post-raise is peak buying window. But everyone emails post-raise
-companies, so the bar for specificity is higher.
+### Evento chegando
+Vídeo se compra perto de uma data. Com o radar de eventos, você sabe a data.
 
-- **Angle**: the specific pressure the raise creates (hiring fast, new
-  targets, scaling a motion), not "congrats on the round."
-- **Good**: "Post-Series-A usually means the pipeline target just doubled
-  overnight. Is outbound the gap, or is it converting what's already coming
-  in?"
-- **Bad**: "Congratulations on your recent funding!" (every vendor sent
-  that the same week).
+- **Ângulo:** o que vai se perder se o evento não for registrado, ou o que dá pra fazer com ele depois.
+- **Bom:** "Vi que a conferência de vocês é em 12 de novembro. Já têm quem vai fazer o aftermovie?"
+- **Ruim:** "Parabéns pelo evento!" (todo fornecedor manda isso)
 
-### New-domain / new-business signal
-They just started up. Relevant only if you sell to early-stage/new
-businesses.
+### Vaga aberta (contratando para uma função relevante)
+Uma empresa contratando social media ou editor de vídeo está com esse problema agora.
 
-- **Angle**: the thing they haven't set up yet that you provide.
-- Keep it low-key — a brand-new company is drowning in vendor pitches.
+- **Ângulo:** a carga de trabalho por trás da vaga, não a vaga em si.
+- **Bom:** "Vi que vocês estão contratando um social media. Enquanto a vaga não fecha, quem está editando os Reels?"
+- Só cite a vaga específica se as notas disserem qual é.
 
-## Which signal wins when there are several
+### Ferramentas no site (tecnologia detectada)
+Você sabe algo concreto de como eles funcionam. Use só se for relevante para o ponto.
 
-Rank by recency and actionability: **hiring > funding > tech-gap >
-tech-present > industry problem > nothing**. Use exactly ONE signal as the
-hook. Stacking two ("you raised AND you're hiring AND you use X") reads as a
-dossier and kills the human feel. Bank the others for follow-ups.
+- **Bom (lacuna):** "Não vi agendamento online no site. Um vídeo curto mostrando o atendimento costuma ajudar quem ainda está em dúvida."
+- **Ruim:** devolver a lista inteira de ferramentas deles.
 
-## Following up on a signal
+### Anúncios rodando (Google ou Meta)
+Estão gastando com aquisição hoje: têm orçamento e precisam de criativo.
 
-- Email 2 can take a *different* signal or a proof point — never repeat
-  email 1's hook.
-- If the signal has aged (a 4-month-old job post that's now filled), don't
-  reference it as current. Stale specifics destroy credibility.
+- **Ângulo:** criativo de anúncio cansa rápido; ofereça renovação.
+- **Bom:** "Vi que vocês estão anunciando no Instagram. Com que frequência conseguem trocar os vídeos dos anúncios?"
 
-## When you have no real signal
+## Qual sinal vence quando há vários
 
-Be honest about it. Fall back to a genuine problem the role or industry
-faces right now — stated as an observation, not a fake personalization.
-"Most teams at your headcount still reconcile this by hand" is a true,
-useful opener.
-"I was looking at your website and love what you're doing" is not.
+Por atualidade e ação: **evento chegando > vaga aberta > sem vídeo no site > anúncios rodando > canal parado > problema do segmento > nada**. Use exatamente UM sinal como gancho. Empilhar dois ("vocês têm evento E não têm vídeo E contrataram") parece dossiê e mata o tom humano. Guarde os outros para o follow-up.
+
+## Follow-up de um sinal
+
+- O email 2 pode usar *outro* sinal ou uma prova; nunca repita o gancho do email 1.
+- Se o sinal envelheceu (uma vaga de 4 meses atrás que já foi preenchida, um evento que já passou), não cite como atual. Detalhe velho destrói credibilidade.
+
+## Quando não há sinal de verdade
+
+Seja honesto. Use um problema real que a função ou o segmento vive agora, como observação, não como personalização falsa. "A maioria das igrejas do tamanho de vocês grava o culto inteiro e não tem tempo de cortar" é uma abertura verdadeira e útil. "Olhei o site de vocês e adorei o trabalho" não é.

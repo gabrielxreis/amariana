@@ -1,141 +1,127 @@
-# LinkedIn Outreach Skills
+# Contato pelo LinkedIn
 
-Harvey's LinkedIn playbook for building relationships and generating conversations.
-
----
-
-## Read First: Risk & Ethics
-
-- **Automating LinkedIn violates LinkedIn's Terms of Service.** The operator has been warned during setup; the account can be restricted or banned. Stay far under the rate limits in this file — they are ceilings, not targets.
-- **Never use a fake profile or fake identity.** Harvey acts only as the configured persona on the operator's real account.
-- **If someone asks whether messages are automated, answer truthfully.** Immediately.
-- **A "not interested" or ignored message thread is final.** No repeated connection requests, no pestering across email after a LinkedIn decline — the opt-out follows the person, not the channel.
-- **Never scrape or store data from private profiles** beyond what's needed to qualify and personalize (name, title, company, public posts).
+Como a Mariana usa o LinkedIn para criar relação e abrir conversas, principalmente com clientes do exterior.
 
 ---
 
-## Connection Request Strategy
+## Leia primeiro: risco e ética
 
-### To Note or Not to Note
-- **No note**: 34.3% acceptance rate (slightly higher than with notes)
-- **Personalized note**: 32.3% acceptance rate (but allows pre-framing)
-- **Rule**: Use notes only when you have something genuinely relevant to say. A generic note hurts more than no note at all.
-
-### Good Connection Notes (under 300 chars)
-```
-"Hi {{first_name}} — saw your post about {{topic}}. Thought-provoking stuff.
-Would love to connect."
-
-"Hi {{first_name}} — we're both in the {{industry}} space. Always good to
-connect with fellow {{title}}s."
-
-"{{first_name}} — {{mutual_connection}} mentioned you're doing great work
-at {{company}}. Would love to connect."
-```
-
-### Bad Connection Notes (never do these)
-- "I'd love to tell you about our product..." (sales pitch on connect)
-- "We help companies like yours..." (too salesy)
-- Generic "Let's connect!" with no context
+- **A Mariana não automatiza o LinkedIn.** Automatizar viola os termos do LinkedIn e pode restringir ou banir a conta. Ela escreve a nota do convite e a mensagem; o usuário envia da própria conta (aba Mensagens do painel).
+- **Nunca use perfil ou identidade falsa.** As mensagens são do usuário, na conta real dele.
+- **Se perguntarem se as mensagens são automatizadas, responda a verdade.** Na hora.
+- **"Não tenho interesse" ou conversa ignorada é final.** Nada de convite repetido, nada de insistir por email depois de um não no LinkedIn: o pedido de não contato acompanha a pessoa, não o canal.
+- **Nunca colete dados de perfil privado** além do necessário para qualificar e personalizar (nome, cargo, empresa, posts públicos).
 
 ---
 
-## Messaging Sequence (Post-Connection)
+## Convite de conexão
 
-### Day 0: Connection Accepted
-- Do NOT pitch immediately
-- Optional: Like or comment on their recent post (build familiarity)
+### Com nota ou sem nota
+- **Sem nota:** ~34% de aceite (um pouco mais que com nota)
+- **Com nota personalizada:** ~32% de aceite (mas já prepara a conversa)
+- **Regra:** use nota só quando tiver algo realmente relevante para dizer. Nota genérica atrapalha mais que nota nenhuma.
 
-### Day 1-2: First Message
-- Thank them for connecting
-- Ask a genuine question or share a relevant insight
-- NO pitch, NO links, NO asks
-
+### Boas notas (menos de 300 caracteres)
 ```
-"Thanks for connecting, {{first_name}}! Been following what {{company}}
-is doing with {{initiative}} — really impressive growth.
+"Hi {{first_name}}, I edit event films for churches and saw your
+conference is coming up in November. Would be great to connect."
 
-Quick question: how are you all currently handling {{relevant_process}}?"
-```
+"Hi {{first_name}}, I'm a filmmaker based in Rio. Saw the team is
+coming to Brazil for the game in September. Happy to connect."
 
-### Day 4-5: Second Message (if they replied)
-- Continue the conversation naturally
-- Introduce your product ONLY if there's a natural opening
-- Frame as "we do something similar" not "buy our thing"
-
-```
-"That's interesting — we actually built something that tackles exactly that.
-A few {{industry}} companies are using it to {{benefit}}.
-
-Would you be open to a quick look? No pressure at all."
+"Oi {{first_name}}, sou filmmaker e acompanho o trabalho da
+{{company}} com eventos. Bom te ter por aqui."
 ```
 
-### Day 4-5: Second Message (if NO reply)
-- One gentle follow-up only
-- Add value (share an article, insight, or observation)
-
-```
-"Hey {{first_name}} — came across this {{article/stat}} about {{topic}}
-and thought of {{company}}. Figured it might be useful.
-
-[Link or brief summary]"
-```
-
-### After 2 Messages with No Reply
-- Stop. Do not send more LinkedIn messages.
-- Move them to email outreach if you have their address.
+### Notas ruins (nunca)
+- "Quero te apresentar meu trabalho..." (venda no convite)
+- "Eu ajudo empresas como a sua..." (vendedor demais)
+- "Vamos nos conectar!" genérico, sem contexto
 
 ---
 
-## Profile Engagement Strategy (Warm-Up)
+## Mensagens depois da conexão
 
-Before reaching out to high-value prospects, warm them up:
+### Dia 0: aceitou
+- NÃO venda na hora
+- Opcional: curta ou comente um post recente (gera familiaridade)
 
-1. **Week 1**: View their profile (they see the notification)
-2. **Week 1-2**: Like 2-3 of their posts
-3. **Week 2**: Leave a thoughtful comment on a post
-4. **Week 2-3**: Send connection request (they now recognize your name)
+### Dia 1 a 2: primeira mensagem
+- Agradeça a conexão
+- Faça uma pergunta genuína ou traga uma observação relevante
+- SEM venda, SEM link, SEM pedido
 
-This sequence increases acceptance rates by up to 25%.
+```
+"Thanks for connecting, {{first_name}}. Saw the highlight video from
+last year's conference, great energy.
 
----
+Who's handling the video side this year?"
+```
 
-## Content for Engagement
+### Dia 4 a 5: segunda mensagem (se respondeu)
+- Siga a conversa com naturalidade
+- Fale do seu trabalho SÓ se houver abertura
+- "Eu faço algo parecido" e não "contrate meu serviço"
 
-When commenting on prospects' posts:
-- Add substance, not just "Great post!"
-- Share a relevant experience or data point
-- Ask a follow-up question
-- Keep it under 3 sentences
+```
+"Makes sense. I actually do exactly that for a few churches, same-day
+edits so the recap is up before people get home.
 
-Good: "This resonates. We saw the same pattern with {{related insight}}.
-Curious — did you find that {{follow-up question}}?"
+Would it help if I sent two examples?"
+```
 
-Bad: "Great insight! 🔥 Totally agree!"
+### Dia 4 a 5: segunda mensagem (se NÃO respondeu)
+- Um lembrete leve, só um
+- Traga valor (uma observação útil)
 
----
-
-## Rate Limits & Safety
-
-To avoid LinkedIn restrictions:
-- **Connection requests**: Max 20/day, spread throughout the day
-- **Messages**: Max 10/day to new connections
-- **Profile views**: Max 50/day
-- **Random delays**: 3-8 seconds between actions
-- **Session length**: Max 2 hours, then break for 1+ hours
-- **Weekly limits**: Max 100 connection requests/week
-- **Cookie persistence**: Reuse sessions, don't re-login each time
-- **Human patterns**: Don't operate during obviously off-hours for your timezone
+### Depois de 2 mensagens sem resposta
+- Pare. Nada de mais mensagens no LinkedIn.
+- Se tiver o email, siga pelo email.
 
 ---
 
-## LinkedIn-Specific Personalization Sources
+## Aquecimento (para leads de alto valor)
 
-When crafting messages, look for:
-1. Recent posts or articles they've shared
-2. Job changes (new role = high receptivity window)
-3. Company milestones (funding, product launches, hiring)
-4. Mutual connections
-5. Shared groups or interests
-6. Their "About" section
-7. Featured content on their profile
+Antes de contatar um lead importante:
+1. **Semana 1:** veja o perfil (a pessoa recebe a notificação)
+2. **Semana 1 a 2:** curta 2 ou 3 posts
+3. **Semana 2:** deixe um comentário que acrescente algo
+4. **Semana 2 a 3:** mande o convite (agora ela reconhece seu nome)
+
+Isso aumenta o aceite em até 25%.
+
+---
+
+## Comentários
+
+Ao comentar posts de leads:
+- Acrescente algo, não só "Ótimo post!"
+- Traga uma experiência ou um dado relevante
+- Faça uma pergunta
+- Menos de 3 frases
+
+Bom: "Faz sentido. Vi o mesmo nos eventos que filmei este ano: o vídeo curto do mesmo dia rende mais que o aftermovie longo. Vocês também perceberam isso?"
+
+Ruim: "Arrasou! 🔥 Concordo demais!"
+
+---
+
+## Limites (mesmo enviando à mão)
+
+Para não chamar atenção do LinkedIn:
+- **Convites:** no máximo 20 por dia, espalhados
+- **Mensagens:** no máximo 10 por dia para conexões novas
+- **Semana:** no máximo 100 convites
+- Envie em horário comercial do seu fuso
+
+---
+
+## Onde achar personalização no LinkedIn
+
+1. Posts e artigos recentes
+2. Mudança de cargo (cargo novo = janela de abertura)
+3. Marcos da empresa (eventos, lançamentos, contratações)
+4. Conexões em comum
+5. Grupos ou interesses em comum
+6. A seção "Sobre"
+7. Conteúdo em destaque no perfil

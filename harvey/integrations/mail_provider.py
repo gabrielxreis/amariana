@@ -1,6 +1,6 @@
-"""Mail provider abstraction — Harvey owns its sending, Instantly optional.
+"""Mail provider abstraction — Mariana owns its sending, Instantly optional.
 
-A MailProvider gives Harvey full inbox control: send, read replies,
+A MailProvider gives Mariana full inbox control: send, read replies,
 thread. Two native providers ship:
 
 - ``gmail``  — a Google Workspace / Gmail mailbox via the Gmail REST API
@@ -61,7 +61,7 @@ def looks_like_bounce(from_email: str, subject: str) -> bool:
 
 
 class MailProvider(ABC):
-    """A mailbox Harvey can send from and read replies out of."""
+    """A mailbox Mariana can send from and read replies out of."""
 
     name: str = "base"
 

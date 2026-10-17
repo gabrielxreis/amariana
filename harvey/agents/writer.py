@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from harvey import market
 from harvey.brain import Brain
-from harvey.config import HarveyConfig
+from harvey.config import MarianaConfig
 from harvey.integrations.mail_provider import NATIVE_PROVIDERS
 from harvey.models.campaign import Campaign, EmailStep
 from harvey.state import StateManager
@@ -33,7 +33,7 @@ class Writer:
         self,
         brain: Brain,
         state: StateManager,
-        config: HarveyConfig,
+        config: MarianaConfig,
         env=None,
     ):
         self.brain = brain

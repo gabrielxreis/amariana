@@ -149,7 +149,7 @@ class PreclearedClient:
             payload["pitch"] = self.pitch
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "harvey (+https://github.com/ethanplusai/harvey)",
+            "User-Agent": "harvey (+https://github.com/gabrielxreis/amariana)",
         }
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"

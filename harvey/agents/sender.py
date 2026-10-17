@@ -17,7 +17,7 @@ import re
 from datetime import date, datetime, timedelta, timezone
 
 from harvey.brain import Brain
-from harvey.config import HarveyConfig, EnvConfig
+from harvey.config import MarianaConfig, EnvConfig
 from harvey.gate import pre_send_check
 from harvey.integrations.instantly import InstantlyClient
 from harvey.integrations.mail_provider import NATIVE_PROVIDERS, get_mail_provider
@@ -55,7 +55,7 @@ class Sender:
         self,
         brain: Brain,
         state: StateManager,
-        config: HarveyConfig,
+        config: MarianaConfig,
         env: EnvConfig,
     ):
         self.brain = brain
@@ -322,7 +322,7 @@ class Sender:
         if paused:
             logger.warning(
                 f"Sender: SENDING PAUSED ({paused}). Resume from the dashboard "
-                "or `harvey sending resume` once the cause is fixed."
+                "or `mariana sending resume` once the cause is fixed."
             )
             return
 

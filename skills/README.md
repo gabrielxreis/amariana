@@ -1,48 +1,52 @@
-# Skills
+# Base de conhecimento
 
-Skills are editable Markdown files that give Harvey foundational sales knowledge. Each agent loads the skills it needs before making decisions.
+Arquivos Markdown editáveis que dão à Mariana o conhecimento de vendas. Cada agente carrega os arquivos de que precisa antes de decidir.
 
-## How Skills Work
+## Como funciona
 
-When an agent runs, it calls `brain.load_skills_for_agent("agent_name")` which concatenates the relevant skill files and injects them into the prompt. This means you can change Harvey's behavior by editing these files — no code changes needed.
+Quando um agente roda, ele chama `brain.load_skills_for_agent("nome_do_agente")`, que junta os arquivos certos e coloca no prompt. Ou seja: dá pra mudar o comportamento da Mariana só editando estes arquivos, sem mexer no código.
 
-## Skill → Agent Mapping
+## Qual agente usa o quê
 
-| Skill | Scout | Writer | Handler | Sender | LinkedIn |
+| Arquivo | Scout | Writer | Handler | Sender | Channels |
 |-------|-------|--------|---------|--------|----------|
-| `prospecting_tactics.md` | x | | | | x |
+| `prospecting_tactics.md` | x | | | | |
 | `lead_qualification.md` | x | | | | |
 | `account_navigation.md` | x | | | | |
 | `signal_playbook.md` | x | x | | | |
+| `audiovisual_offer.md` | x | x | x | | x |
 | `email_frameworks.md` | | x | | x | |
 | `sales_methodology.md` | | x | x | | |
 | `offer_strategy.md` | | x | x | | |
 | `objection_handling.md` | | | x | | |
+| `channel_messages.md` | | | | | x |
 | `linkedin_outreach.md` | | | | | x |
 | `product_knowledge.md` | x | x | x | x | x |
 | `competitive_intel.md` | | x | x | | |
 
-## Built-in Skills
+## Arquivos que vêm com a Mariana
 
-- **`prospecting_tactics.md`** — Google dorking queries, company website scraping, trigger events, referral mining
-- **`lead_qualification.md`** — BANT screening, ICP scoring, MEDDIC framework, disqualification criteria
-- **`account_navigation.md`** — Multi-contact handling, entry point strategy, multi-threading rules
-- **`signal_playbook.md`** — Turning buying signals (hiring, tech stack, funding) into the email's first line; which signal wins when there are several
-- **`email_frameworks.md`** — Cold email copywriting rules, banned AI patterns, 2026 reply-rate data (length, offer CTAs, cadence, no tracking), 5 frameworks (AIDA, PAS, BAB, QVC, 3Ps)
-- **`sales_methodology.md`** — ABC Loop, conversation flow, tone calibration, ethical guidelines
-- **`offer_strategy.md`** — Offer ladder by engagement level, closing mechanics, timing rules
-- **`objection_handling.md`** — LAARC framework, 4 objection categories with responses
-- **`linkedin_outreach.md`** — Connection sequences, messaging templates, rate limits
+- **`audiovisual_offer.md`**: quem compra vídeo, gancho por segmento, objeções e briefing para orçar
+- **`channel_messages.md`**: WhatsApp, LinkedIn e Instagram por mercado
+- **`prospecting_tactics.md`**: buscas avançadas, garimpo em sites, gatilhos, indicações
+- **`lead_qualification.md`**: triagem BANT, pontuação de perfil, MEDDIC, critérios de desqualificação
+- **`account_navigation.md`**: vários contatos na mesma empresa, por onde entrar, multi-thread
+- **`signal_playbook.md`**: como transformar um sinal na primeira linha da mensagem; qual sinal vence quando há vários
+- **`email_frameworks.md`**: regras de escrita de email frio, padrões de IA proibidos, dados de taxa de resposta, 5 frameworks (AIDA, PAS, BAB, QVC, 3Ps)
+- **`sales_methodology.md`**: ciclo ABC, fluxo da conversa, calibragem de tom, ética
+- **`offer_strategy.md`**: escada de ofertas por nível de interesse, fechamento, timing
+- **`objection_handling.md`**: método LAARC, 4 tipos de objeção com respostas
+- **`linkedin_outreach.md`**: sequência de conexão, modelos de mensagem, limites
 
-## Auto-Generated Skills
+## Gerados para você
 
-These are created by `harvey train <url>` and are specific to your product:
+Criados pelo `mariana onboard` (ou `mariana train <url>`), específicos do seu negócio e fora do git:
 
-- **`product_knowledge.md`** — Features, benefits, pricing, use cases, pain points, buying triggers
-- **`competitive_intel.md`** — Battle cards for each competitor, differentiation angles, migration paths
+- **`product_knowledge.md`**: quem você é, serviços, preços, portfólio por segmento, clientes, quem procurar
+- **`competitive_intel.md`**: comparação com concorrentes (quando gerado pelo train)
 
-## Adding or Editing Skills
+## Editar ou criar
 
-1. Edit any `.md` file in this directory
-2. Changes take effect on the next heartbeat cycle (no restart needed)
-3. To add a new skill, create the file and add it to the `skill_map` in `harvey/brain.py`
+1. Edite qualquer `.md` desta pasta
+2. Vale a partir do próximo ciclo (sem reiniciar)
+3. Para um arquivo novo, crie e acrescente o nome no `skill_map` em `harvey/brain.py`

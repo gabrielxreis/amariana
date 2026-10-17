@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timezone
 
 from harvey.brain import Brain, BrainUnavailable
-from harvey.config import HarveyConfig, EnvConfig
+from harvey.config import MarianaConfig, EnvConfig
 from harvey.integrations.instantly import InstantlyClient
 from harvey.integrations.mail_provider import NATIVE_PROVIDERS, get_mail_provider
 from harvey.models.conversation import Conversation, Message
@@ -83,7 +83,7 @@ class Handler:
         self,
         brain: Brain,
         state: StateManager,
-        config: HarveyConfig,
+        config: MarianaConfig,
         env: EnvConfig,
     ):
         self.brain = brain
@@ -495,7 +495,7 @@ class Handler:
     async def _queue_native_reply(
         self, response: str, prospect, convo, reply_meta: dict, intent: str
     ):
-        """Route Harvey's reply through the outbox (approval ladder applies)."""
+        """Route Mariana's reply through the outbox (approval ladder applies)."""
         require_approval = getattr(
             self.config.channels.email, "require_approval", True
         )

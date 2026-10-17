@@ -60,7 +60,7 @@ class FakeProvider(MailProvider):
 
 class Cfg:
     class persona:
-        name = "Harvey"; email = "harvey@x.co"; company = "X"; role = "BD"; tone = "direct"
+        name = "Mariana"; email = "harvey@x.co"; company = "X"; role = "BD"; tone = "direct"
 
     class product:
         name = "P"; description = "d"; pricing = "$"; key_benefits = ["b"]

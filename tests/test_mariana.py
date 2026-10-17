@@ -3,7 +3,7 @@
 import pytest
 
 from harvey import market
-from harvey.config import HarveyConfig
+from harvey.config import MarianaConfig
 from harvey.integrations.whatsapp import is_probably_mobile, normalize_phone, wa_link
 from harvey.models.company import Company
 from harvey.models.prospect import Prospect
@@ -12,7 +12,7 @@ from harvey.signature import compose, render_html, render_text
 from harvey.state import StateManager
 
 
-def _config(**persona_extra) -> HarveyConfig:
+def _config(**persona_extra) -> MarianaConfig:
     persona = {
         "name": "Ana Lima", "company": "Lima Filmes", "role": "Filmmaker",
         "email": "ana@limafilmes.com.br", "linkedin": "", "tone": "direto",
@@ -20,7 +20,7 @@ def _config(**persona_extra) -> HarveyConfig:
                       "instagram": "@limafilmes", "portfolio": "vimeo.com/limafilmes"},
     }
     persona.update(persona_extra)
-    return HarveyConfig(
+    return MarianaConfig(
         persona=persona,
         product={"name": "Lima Filmes", "description": "Filmagem", "pricing": "",
                  "key_benefits": [], "objection_responses": {}},
@@ -169,7 +169,7 @@ PROFILE = {
 def test_build_config_validates_and_keeps_operational_settings():
     existing = {"channels": {"email": {"provider": "gmail"}}, "brain": {"provider": "claude"}}
     cfg_dict = build_config(PROFILE, existing)
-    cfg = HarveyConfig(**cfg_dict)
+    cfg = MarianaConfig(**cfg_dict)
     assert cfg.persona.name == "Ana Lima"
     assert cfg.persona.signature.whatsapp == "5521999998888"
     assert cfg.icp.geo_coordinates["Rio de Janeiro, RJ"] == "-22.9,-43.2,40"

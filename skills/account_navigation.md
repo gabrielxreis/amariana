@@ -1,108 +1,102 @@
-# Account Navigation: Working Multiple Contacts at One Company
+# Navegação de contas: vários contatos na mesma empresa
 
-## Companies vs Contacts
+## Empresas x contatos
 
-A company is an account. A contact is a person at that company. One company can have many contacts. Harvey must always create the company profile first, then attach contacts to it.
+Uma empresa é uma conta. Um contato é uma pessoa nessa empresa. Uma empresa pode ter vários contatos. A Mariana sempre cria o perfil da empresa primeiro e depois liga os contatos a ele.
 
-## Company Profiles
+## Perfil da empresa
 
-Every company Harvey researches must have:
-- **Name**: The actual company name
-- **Domain**: Their website domain (e.g., acme.com)
-- **Website**: Full URL
-- **Description**: What the company does (1-2 sentences)
-- **Industry**: Primary industry
-- **Company size**: Employee range
-- **Location**: HQ city/region
-- **Source**: How Harvey found them (google, linkedin, website scrape)
-- **Source URL**: The exact URL where Harvey found the info
+Toda empresa pesquisada precisa ter:
+- **Nome:** o nome real
+- **Domínio:** o domínio do site (ex.: igrejaluz.com.br)
+- **Site:** endereço completo
+- **Descrição:** o que a empresa faz (1 ou 2 frases)
+- **Segmento:** o principal
+- **Tamanho:** faixa de pessoas
+- **Local:** cidade/região
+- **Origem:** como a Mariana achou (busca, mapa, site, radar de eventos)
+- **URL de origem:** o endereço exato onde a informação foi achada
 
-Harvey should pull this from the company's website, LinkedIn company page, or Google results. Do not guess. If you can't verify a field, leave it blank.
+Tire do site da empresa, do LinkedIn ou da busca. Não chute. Se não der para confirmar um campo, deixe em branco.
 
-## Contact Profiles
+## Perfil do contato
 
-Every contact must have at minimum:
-- **First name**: Required. Must be real, verified.
-- **Last name**: Required. Must be real, verified.
-- **Title**: Required. Must be their actual current title.
-- **Company**: Linked to the company profile.
+Todo contato precisa ter no mínimo:
+- **Nome:** obrigatório, real e verificado
+- **Sobrenome:** obrigatório, real e verificado
+- **Cargo:** obrigatório, o cargo atual de verdade
+- **Empresa:** ligada ao perfil da empresa
 
-Optional fields (only fill if verifiable):
-- **Email**: Only include if verified via MX/SMTP check or found on the company website. Mark email_verified = true only if confirmed.
-- **Phone**: Very difficult to find. Only include if listed publicly (company website, LinkedIn profile). Mark phone_verified = true only if confirmed. Do NOT guess phone numbers.
-- **LinkedIn URL**: Include if found.
-- **Seniority**: c_suite, vp, director, manager, individual. Infer from title.
-- **Department**: Sales, marketing, engineering, operations, etc. Infer from title.
+Campos opcionais (só se der para verificar):
+- **Email:** só se verificado ou publicado no site da empresa. `email_verified = true` só se confirmado.
+- **Telefone:** só se publicado (site, Google, LinkedIn). Nunca chute telefone. No Brasil, é por ele que vai o WhatsApp.
+- **LinkedIn:** se achar.
+- **Senioridade:** c_suite, vp, director, manager, individual. Pelo cargo.
+- **Área:** comunicação, marketing, eventos, ministério, operações etc. Pelo cargo.
 
-### Data Quality Rules
-1. Never fabricate contact information. If you can't verify it, don't include it.
-2. Email patterns (first.last@domain.com) are only valid after SMTP verification.
-3. A contact without a verified email can still be valuable for LinkedIn outreach.
-4. Always record where you found each piece of information (source + source_url).
+### Qualidade dos dados
+1. Nunca invente contato. Se não dá para verificar, não inclua.
+2. Padrão de email (nome.sobrenome@dominio) só vale depois de verificado.
+3. Um contato sem email verificado ainda vale para WhatsApp, LinkedIn ou Instagram.
+4. Registre sempre de onde veio cada informação (origem + URL).
 
-## Who to Contact at a Company
+## Com quem falar na empresa
 
-### The Entry Point Matrix
+### Por onde entrar
 
-Not all contacts are equal. Who you reach out to first depends on the deal type:
+Nem todo contato é igual. Quem procurar primeiro depende do tamanho do job:
 
-| Deal Type | First Contact | Second Contact | Avoid First |
+| Tamanho do job | Primeiro contato | Segundo contato | Evite primeiro |
 |-----------|--------------|----------------|-------------|
-| **Small purchase** (<$500/mo) | End user / manager | Their boss | C-suite (too senior) |
-| **Mid-market** ($500-5k/mo) | Director / VP | Manager who'd use it | Individual contributors |
-| **Enterprise** ($5k+/mo) | VP / C-suite | Champion (manager who'll advocate) | Junior staff |
+| **Pequeno** (um vídeo, um pacote de Reels) | Social media / coordenador de comunicação | O chefe dele | Dono de empresa grande (alto demais) |
+| **Médio** (evento, institucional) | Diretor de marketing / comunicação, pastor de mídia | Quem vai usar o vídeo | Estagiários |
+| **Grande** (contrato mensal, marca grande, time) | Diretor / dono | Um defensor interno (gerente que apoia) | Equipe júnior |
 
-### Multi-Threading: Working Multiple Contacts
+### Vários contatos ao mesmo tempo
 
-When Harvey finds multiple contacts at one company:
+Quando houver vários contatos na mesma empresa:
 
-1. **Start with one.** Never email multiple people at the same company simultaneously. It looks spammy and they'll compare notes.
+1. **Comece por um.** Nunca escreva para várias pessoas da mesma empresa ao mesmo tempo. Parece spam e elas comparam.
+2. **Comece no nível certo.** Escolha quem mais provavelmente:
+   - sente o problema que você resolve
+   - tem autoridade para avaliar
+   - lê e responde mensagem
+3. **Suba ou desça conforme a resposta:**
+   - O coordenador não respondeu? Tente o diretor.
+   - O diretor disse "fala com a equipe"? Escreva para o coordenador citando o diretor.
+   - O coordenador gostou? Pergunte se quer incluir o chefe.
+4. **Espere entre contatos.** Escreveu para a Pessoa A, espere pelo menos 5 dias úteis antes da Pessoa B. Trate a empresa como uma conta só.
+5. **Compartilhe o contexto.** Se a Pessoa A respondeu, a Mariana precisa saber disso ao escrever para a Pessoa B. "A Sara comentou que vocês estão avaliando opções para o evento" é poderoso.
 
-2. **Start at the right level.** Pick the person most likely to:
-   - Feel the pain your product solves
-   - Have authority to evaluate solutions
-   - Actually read and respond to email
+### Senioridade pelo cargo
 
-3. **Move up or down based on response:**
-   - No response from manager? Try the VP.
-   - VP says "talk to my team"? Email the manager and reference the VP.
-   - Manager is interested? Ask if they'd like to loop in their boss.
+- **C-suite:** CEO, dono, fundador, sócio, "Diretor-geral", pastor presidente
+- **VP:** vice-presidente, "Head de __"
+- **Diretor:** diretor, "Diretor de __", pastor de área
+- **Gerente:** gerente, coordenador, líder de equipe
+- **Individual:** analista, assistente, social media, auxiliar
 
-4. **Wait between contacts.** If you email Person A at Acme, wait at least 5 business days before emailing Person B at Acme. Treat the company as one account, not individual contacts.
+### Quando parar
 
-5. **Share context across contacts.** If Person A replied, Harvey should know that when writing to Person B. "Your colleague Sarah mentioned she's evaluating options" is powerful.
+Pare de procurar uma empresa se:
+- 3 contatos diferentes receberam mensagem sem resposta
+- Qualquer contato disse "não tenho interesse" ou "pare de mandar"
+- A empresa não bate com o perfil depois de pesquisar mais
 
-### Seniority Detection
+## Amostra para validar
 
-Infer seniority from the title:
+Antes de colocar leads no funil de verdade, a Mariana monta uma amostra de 5 a 10 empresas com contatos e mostra para o usuário. Isso garante que:
 
-- **C-Suite**: CEO, CTO, CFO, CMO, COO, CRO, "Chief __"
-- **VP**: VP, Vice President, SVP, EVP, "Head of __"
-- **Director**: Director, Senior Director, "Director of __"
-- **Manager**: Manager, Senior Manager, Team Lead, "Manager of __"
-- **Individual**: Analyst, Specialist, Coordinator, Associate, Engineer
+1. O perfil de cliente está certo (segmentos e tamanhos)
+2. Os cargos são os que o usuário quer
+3. A qualidade dos dados está boa
+4. As fontes são legítimas
 
-### When to Stop
+### Como funciona
+1. A Mariana pesquisa 5 a 10 empresas e seus contatos
+2. Mostra como amostra: "Achei estas 8 empresas, cada uma com 1 ou 2 contatos. São esse tipo de cliente?"
+3. O usuário comenta ("pequenas demais", "segmento errado", "perfeito", "esse já é meu cliente")
+4. A Mariana ajusta
+5. Com a aprovação, segue sozinha
 
-Stop contacting a company if:
-- 3 different contacts have been emailed with no response
-- Any contact explicitly says "not interested" or "stop emailing"
-- The company doesn't match ICP after further research
-
-## Sample Verification
-
-Before adding prospects to the live pipeline, Harvey should create a sample batch of 5-10 company + contact profiles and present them to the user for review. This ensures:
-
-1. The ICP targeting is correct (right industries, right company sizes)
-2. The contact titles match what the user wants
-3. The data quality meets expectations
-4. The research sources are legitimate
-
-### Sample Flow
-1. Harvey researches 5-10 companies and their contacts
-2. Presents them as a sample: "Here are 8 companies I found. Each has 1-2 contacts. Take a look and let me know if these are the right kind of targets."
-3. User reviews and gives feedback ("too small", "wrong industry", "perfect", "we already work with them")
-4. Harvey adjusts targeting based on feedback
-5. After approval, Harvey proceeds with full prospecting
-
-This sample step only happens once at the start (or when the ICP changes). After the user approves the sample, Harvey prospects autonomously.
+Essa amostra acontece uma vez no começo (ou quando o perfil muda). Depois, a Mariana prospecta sozinha.
