@@ -62,6 +62,9 @@ PROFILE_SCHEMA = {
         "differentiators": ["what makes them different from other filmmakers"],
         "past_clients": ["real clients they may cite publicly"],
         "notable_work": ["projects worth mentioning, with links if any"],
+        "portfolio_items": [{"title": "", "url": "", "description": "",
+                             "segment": "igreja | evento | casamento | esporte | marca | "
+                                        "imobiliaria | institucional | musica | geral"}],
         "travel": "do they travel / work remotely / where",
         "equipment": "short, only if it matters to clients",
     },
@@ -98,6 +101,8 @@ CORE_QUESTIONS = [
     ("person.portfolio", "Link do seu portfólio / showreel:"),
     ("offer.services", "Quais serviços você vende e a partir de quanto cada um?"),
     ("offer.past_clients", "Clientes que você pode citar publicamente:"),
+    ("offer.portfolio_items", "Seus melhores trabalhos, um por linha: título, link e "
+                              "tipo de cliente (igreja, evento, casamento, esporte, marca...):"),
     ("targets.industries", "Que tipo de cliente você quer fechar? (igrejas, eventos, marcas...)"),
     ("targets.markets", "Em quais cidades/países a Mariana deve procurar clientes?"),
     ("targets.avoid", "Algum tipo de cliente que você NÃO quer?"),
@@ -191,7 +196,8 @@ Return JSON: {{"profile": {{...schema...}}, "questions": [{{"key": "dotted.key o
         prompt = f"""Merge the draft profile with the person's interview answers
 into the final profile. Answers override the draft. Keep the exact schema.
 Normalize: WhatsApp to digits with country code; prices as written by the
-person; markets with approximate lat/lng and radius_km (default 50) and the
+person; every portfolio link becomes a portfolio_items entry with a segment
+(guess it from the title/client when not given); markets with approximate lat/lng and radius_km (default 50) and the
 language spoken there (pt-BR for Brazil, en elsewhere). Write the bio in the
 person's own voice and default language. Fill "timezone" from their city.
 Never invent clients, prices or links that are not in the inputs.
@@ -343,6 +349,14 @@ def render_knowledge(profile: dict) -> str:
         out += [f"| {s.get('name','')} | {s.get('description','')} | "
                 f"{s.get('starting_price','') or 'sob orçamento'} | {s.get('turnaround','')} |"
                 for s in services]
+        out.append("")
+    pieces = [i for i in o.get("portfolio_items") or [] if isinstance(i, dict) and i.get("url")]
+    if pieces:
+        out += ["## Portfólio por segmento", "",
+                "Mande o trabalho do mesmo segmento do cliente.", "",
+                "| Segmento | Trabalho | Link |", "|---|---|---|"]
+        out += [f"| {i.get('segment') or 'geral'} | {i.get('title') or ''} | {i['url']} |"
+                for i in sorted(pieces, key=lambda i: i.get("segment") or "")]
         out.append("")
     for title, key in (("Pacotes", "packages"), ("Por que contratam", "key_benefits"),
                        ("Diferenciais", "differentiators"),

@@ -803,6 +803,90 @@ async def channel_action(item_id: str, action: str):
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
+async def _mariana_handler():
+    """A Handler wired like the heartbeat's, for replies that arrive here."""
+    from harvey.agents.handler import Handler
+    from harvey.brain import Brain
+    from harvey.config import load_config, load_env
+    config = load_config()
+    state = _state()
+    await state.init_db()
+    return Handler(Brain(state, config.brain), state, config, load_env()), state, config
+
+
+@app.post("/api/channels/{item_id}/replied")
+async def channel_replied(item_id: str, request: Request):
+    """They answered on WhatsApp / LinkedIn / Instagram. Paste the reply:
+    queued emails stop, the conversation opens, and an answer is drafted."""
+    try:
+        payload = await request.json()
+        text = (payload.get("text") or "").strip()
+        if not text:
+            return JSONResponse({"success": False, "message": "cole a resposta"}, status_code=400)
+        handler, state, _ = await _mariana_handler()
+        item = await state.get_channel_item(item_id)
+        if not item or not item["prospect_id"]:
+            return JSONResponse({"success": False, "message": "not found"}, status_code=404)
+        prospect = await state.get_prospect(item["prospect_id"])
+        if not prospect:
+            return JSONResponse({"success": False, "message": "prospect missing"}, status_code=404)
+        if item["status"] != "sent":
+            now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+            await state.update_channel_item(item_id, status="sent", sent_at=now)
+        if item["channel"] == "whatsapp":
+            await state.update_channel_item(item_id, opted_in=True)
+        convo_id = await handler.handle_external_reply(prospect, text, item["channel"])
+        return {"success": True, "conversation_id": convo_id}
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.get("/webhooks/whatsapp")
+async def whatsapp_verify(request: Request):
+    """Meta's webhook handshake (Cloud API). Needs WHATSAPP_VERIFY_TOKEN and a
+    public URL to this dashboard (e.g. a Cloudflare tunnel)."""
+    from harvey.config import load_env
+    q = request.query_params
+    if q.get("hub.mode") == "subscribe" and q.get("hub.verify_token") == load_env().whatsapp_verify_token \
+            and load_env().whatsapp_verify_token:
+        return HTMLResponse(q.get("hub.challenge", ""))
+    return JSONResponse({"error": "forbidden"}, status_code=403)
+
+
+@app.post("/webhooks/whatsapp")
+async def whatsapp_inbound(request: Request):
+    """Inbound WhatsApp messages from the Cloud API: matched to the prospect
+    by phone and handled exactly like a pasted reply."""
+    try:
+        data = await request.json()
+    except Exception:
+        return {"ok": True}
+    try:
+        handler, state, config = await _mariana_handler()
+        from harvey.integrations.whatsapp import normalize_phone
+        for entry in data.get("entry", []):
+            for change in entry.get("changes", []):
+                for msg in (change.get("value") or {}).get("messages", []):
+                    if msg.get("type") != "text":
+                        continue
+                    phone = normalize_phone("+" + msg.get("from", ""),
+                                            config.channels.whatsapp.default_country_code)
+                    rows = await query_db(
+                        "SELECT prospect_id FROM channel_outbox WHERE channel = 'whatsapp' "
+                        "AND target = ? AND prospect_id != '' ORDER BY created_at DESC LIMIT 1",
+                        (phone,))
+                    if not rows:
+                        logger.info(f"whatsapp webhook: message from unknown {phone}")
+                        continue
+                    prospect = await state.get_prospect(rows[0]["prospect_id"])
+                    if prospect:
+                        await handler.handle_external_reply(
+                            prospect, (msg.get("text") or {}).get("body", ""), "whatsapp")
+    except Exception as e:
+        logger.error(f"whatsapp webhook failed: {e}")
+    return {"ok": True}
+
+
 @app.post("/api/sending/{action}")
 async def sending_toggle(action: str):
     if action not in ("pause", "resume"):
@@ -872,6 +956,119 @@ async def get_conversations():
         except (json.JSONDecodeError, TypeError):
             row["thread"] = []
     return rows
+
+
+@app.get("/api/metrics")
+async def get_metrics():
+    try:
+        from harvey.config import load_config
+        from harvey.metrics import compute
+        state = _state()
+        await state.init_db()
+        lang = getattr(load_config().persona, "language", "pt-BR")
+        return await compute(state, lang)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/jobs")
+async def get_jobs_api():
+    try:
+        state = _state()
+        await state.init_db()
+        jobs = await state.get_jobs()
+        for j in jobs:
+            j["proposal_file"] = Path(j["proposal_path"]).name if j.get("proposal_path") else ""
+        return jobs
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/api/conversations/{conversation_id}/proposal")
+async def make_proposal(conversation_id: str):
+    """Read the conversation, build the proposal (PDF when Chrome is around)."""
+    try:
+        from harvey.brain import Brain
+        from harvey.config import load_config
+        from harvey.proposal import build_proposal
+        config = load_config()
+        state = _state()
+        await state.init_db()
+        result = await build_proposal(state, Brain(state, config.brain), config, conversation_id)
+        return {"success": True, "job_id": result["job_id"],
+                "file": Path(result["path"]).name}
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.post("/api/conversations/{conversation_id}/job")
+async def convo_to_job(conversation_id: str, request: Request):
+    """'Fechou': mark the deal won, creating the job if no proposal exists."""
+    try:
+        payload = {}
+        try:
+            payload = await request.json()
+        except Exception:
+            pass
+        state = _state()
+        await state.init_db()
+        convo = await state.get_conversation(conversation_id)
+        if not convo:
+            return JSONResponse({"success": False, "message": "not found"}, status_code=404)
+        prospect = await state.get_prospect(convo.prospect_id)
+        job = await state.job_for_conversation(conversation_id)
+        fields = {k: str(v) for k, v in payload.items()
+                  if k in ("value", "service", "event_date", "next_event_date", "notes")}
+        if job:
+            await state.update_job(job["id"], status="won", **fields)
+            job_id = job["id"]
+        else:
+            job_id = await state.add_job(
+                prospect_id=convo.prospect_id, conversation_id=conversation_id,
+                status="won", company_name=prospect.company if prospect else "",
+                contact_name=prospect.full_name() if prospect else "", **fields)
+        if prospect:
+            await state.update_prospect_status(prospect.id, "closed")
+        await state.update_conversation(conversation_id, status="closed", stage="closed_won")
+        await state.log_action(action_type="job_won", agent="you",
+                               details={"company": prospect.company if prospect else ""})
+        return {"success": True, "job_id": job_id}
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.post("/api/jobs/{job_id}/{action}")
+async def job_action(job_id: str, action: str, request: Request):
+    if action not in ("won", "delivered", "lost", "update"):
+        return JSONResponse({"success": False, "message": "unknown action"}, status_code=400)
+    try:
+        payload = {}
+        try:
+            payload = await request.json()
+        except Exception:
+            pass
+        state = _state()
+        await state.init_db()
+        fields = {k: str(v) for k, v in payload.items()
+                  if k in ("value", "service", "event_date", "next_event_date", "notes")}
+        if action == "delivered":
+            fields["delivered_at"] = payload.get("delivered_at") or datetime.now().date().isoformat()
+        if action != "update":
+            fields["status"] = action
+        await state.update_job(job_id, **fields)
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.get("/api/proposals/{name}")
+async def get_proposal_file(name: str):
+    from fastapi.responses import FileResponse
+    folder = (PROJECT_ROOT / "data" / "propostas").resolve()
+    path = (folder / name).resolve()
+    if path.parent != folder or not path.is_file():
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(str(path))
 
 
 @app.get("/api/activity")

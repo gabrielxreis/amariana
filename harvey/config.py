@@ -331,6 +331,43 @@ class BrainConfig(BaseModel):
         return v
 
 
+class CalendarConfig(BaseModel):
+    """Real free slots from Google Calendar, offered in replies.
+
+    Uses the same Google sign-in as Gmail (`mariana gmail auth`), with the
+    Calendar API enabled in the same Google Cloud project.
+    """
+    enabled: bool = True
+    calendar_id: str = "primary"
+    working_hours: str = "09:00-18:00"
+    working_days: list[int] = [0, 1, 2, 3, 4]   # Monday=0
+    meeting_minutes: int = 30
+    min_notice_hours: int = 20
+    days_ahead: int = 7
+    slots_to_offer: int = 3
+    create_events: bool = True                  # book confirmed calls on the calendar
+
+
+class NotifyConfig(BaseModel):
+    """Phone/desktop alert when a lead answers with interest.
+
+    macOS notification always (when on a Mac). For the phone: install the
+    free ntfy app, subscribe to a hard-to-guess topic and put it in
+    NTFY_TOPIC, or use a Telegram bot (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID).
+    """
+    enabled: bool = True
+    intents: list[str] = ["interested", "question", "objection"]
+    macos: bool = True
+
+
+class PostJobConfig(BaseModel):
+    """After delivery: testimonial + referral, then re-engage before the
+    client's next event."""
+    enabled: bool = True
+    testimonial_after_days: int = 3
+    reengage_days_before_event: int = 45
+
+
 class HarveyConfig(BaseModel):
     persona: PersonaConfig
     product: ProductConfig
@@ -339,6 +376,9 @@ class HarveyConfig(BaseModel):
     usage: UsageConfig = UsageConfig()
     brain: BrainConfig = BrainConfig()
     compliance: ComplianceConfig = ComplianceConfig()
+    calendar: CalendarConfig = CalendarConfig()
+    notify: NotifyConfig = NotifyConfig()
+    postjob: PostJobConfig = PostJobConfig()
 
 
 class EnvConfig(BaseModel):
@@ -372,6 +412,11 @@ class EnvConfig(BaseModel):
     # WhatsApp Business Cloud API (channels.whatsapp.mode: cloud_api)
     whatsapp_token: str = ""
     whatsapp_phone_number_id: str = ""
+    whatsapp_verify_token: str = ""      # webhook verification (Cloud API inbound)
+    ntfy_topic: str = ""
+    ntfy_server: str = "https://ntfy.sh"
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
 
 def _format_validation_error(e: ValidationError) -> str:
@@ -487,6 +532,11 @@ def load_env() -> EnvConfig:
         precleared_api_key=os.getenv("PRECLEARED_API_KEY", "").strip(),
         whatsapp_token=os.getenv("WHATSAPP_TOKEN", "").strip(),
         whatsapp_phone_number_id=os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip(),
+        whatsapp_verify_token=os.getenv("WHATSAPP_VERIFY_TOKEN", "").strip(),
+        ntfy_topic=os.getenv("NTFY_TOPIC", "").strip(),
+        ntfy_server=os.getenv("NTFY_SERVER", "https://ntfy.sh").strip() or "https://ntfy.sh",
+        telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
+        telegram_chat_id=os.getenv("TELEGRAM_CHAT_ID", "").strip(),
     )
     return env
 

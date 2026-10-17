@@ -190,6 +190,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
     from harvey.agents.handler import Handler
     from harvey.agents.analyst import Analyst
     from harvey.agents.channels import ChannelsAgent
+    from harvey.agents.postjob import PostJobAgent
 
     scout = Scout(brain, state, config, env)
     writer = Writer(brain, state, config, env)
@@ -197,6 +198,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
     handler = Handler(brain, state, config, env)
     analyst = Analyst(state)
     channels = ChannelsAgent(brain, state, config, env)
+    postjob = PostJobAgent(brain, state, config, env)
 
     interval = config.usage.heartbeat_interval_minutes * 60
     max_calls = max(int(200 * (config.usage.max_daily_claude_percent / 100)), 1)
@@ -297,6 +299,9 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             # a campaign. Bounded per cycle; nothing goes out without approval.
             if action in ("write_campaign", "send_campaign", "idle", "prospect"):
                 tasks.append(("channels", channels.run()))
+            # Testimonials, referrals, re-engagement before the next event.
+            # Only calls the brain when a job is actually due.
+            tasks.append(("postjob", postjob.run()))
 
             # Profiling rides along every cycle. It is three HTTP requests per
             # business with no model call, so it costs nothing against the

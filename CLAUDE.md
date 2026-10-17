@@ -72,6 +72,11 @@ Tudo cai na aba **Mensagens** do painel. A Mariana escreve; a pessoa aprova, cli
 - Modo `cloud_api` (opcional, `channels.whatsapp.mode`): envio automático pela API oficial da Meta, **só** para contatos marcados como opt-in (quem respondeu ou pediu contato). Precisa de `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID` no `.env` (Meta for Developers > WhatsApp > API Setup). Nunca ofereça automação não oficial do WhatsApp Web.
 - O login automatizado no LinkedIn do Harvey fica desligado (`automate_login: false`): ele viola os termos do LinkedIn.
 
+### Passo 5b: agenda, avisos e números
+- **Agenda real:** ative a Google Calendar API no mesmo projeto do Gmail e rode `mariana gmail auth` de novo. `mariana agenda-check` mostra os próximos horários livres. Nas respostas a interessados, a Mariana oferece esses horários exatos (ou o link de `product.offer.booking_url`, se `booking_method: calendar_link`). Ajustes em `calendar:` no config (horário de trabalho, dias, duração).
+- **Aviso no celular:** instale o app ntfy, assine um tópico difícil de adivinhar e coloque em `NTFY_TOPIC` no `.env` (ou use bot do Telegram). `mariana aviso-teste` testa. No Mac também aparece notificação.
+- **Números:** aba Números do painel (taxa de resposta por mercado, canal e segmento).
+
 ### Passo 6: sinais e descoberta
 ```bash
 mariana signals --confirm free   # inclui NO_VIDEO_ON_SITE, INSTAGRAM_PROFILE, LINKEDIN_COMPANY...
@@ -80,11 +85,26 @@ mariana discover                 # OpenStreetMap, grátis
 ```
 Termos que o OpenStreetMap entende: igreja/church, evento/event, casamento/wedding, academia/gym, imobiliária/real estate, restaurante, hotel, clínica, escola, agência, teatro, esporte, boate.
 
+Radar de eventos (precisa de `SERPER_API_KEY`):
+```bash
+mariana eventos --estimate   # custo antes de gastar
+mariana eventos              # organizadores com evento nos próximos 3 meses
+```
+
 ### Passo 7: rodar
 ```bash
 mariana dashboard   # http://localhost:5555 (Outbox = emails, Mensagens = WhatsApp/LinkedIn/Instagram)
 mariana run         # ciclo a cada 15 min; nada sai sem aprovação
 ```
+
+---
+
+## Do interesse ao job
+- **Resposta fora do email:** na aba Mensagens, nas enviadas, botão "Respondeu": cole o que a pessoa escreveu. Os emails pendentes são cancelados, a conversa abre e a Mariana rascunha a resposta no mesmo canal. Com a Cloud API e webhook, isso é automático para o WhatsApp.
+- **Portfólio certo:** o onboarding guarda cada trabalho com o segmento; respostas e propostas usam o do mesmo segmento do cliente.
+- **Proposta:** em Conversas, "Gerar proposta" (ou `mariana proposta --email x@y.com`): lê o briefing da conversa e gera o PDF em `data/propostas/` com serviços e preços do dossiê. Para um layout na identidade visual, passe o HTML para o Yoshi (/oyoshi).
+- **Fechou:** botão "Fechou" na conversa cria o job (aba Jobs). Marque "Entreguei" e a data do próximo evento: a Mariana pede depoimento e indicação (3 dias depois) e volta a oferecer 45 dias antes do evento. Tudo como rascunho para aprovar.
+- **Amostras:** `mariana amostras` escolhe os 5 leads mais quentes com YouTube/Instagram e gera o briefing em `data/amostras/` para o Gab (/ogab) cortar 15 s. Com o vídeo pronto: `mariana amostra-pronta --prospect ID --link URL`. A amostra vai só para o próprio lead, nunca é publicada.
 
 ---
 

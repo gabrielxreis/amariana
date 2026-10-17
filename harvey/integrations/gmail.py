@@ -40,8 +40,12 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 # gmail.settings.basic lets `mariana signature --install-gmail` set your
 # Gmail signature; sending and reading need only gmail.modify.
+# calendar.freebusy + calendar.events let Mariana offer real free slots and
+# put confirmed calls on the calendar (harvey/integrations/calendar.py).
 SCOPE = ("https://www.googleapis.com/auth/gmail.modify "
-         "https://www.googleapis.com/auth/gmail.settings.basic")
+         "https://www.googleapis.com/auth/gmail.settings.basic "
+         "https://www.googleapis.com/auth/calendar.freebusy "
+         "https://www.googleapis.com/auth/calendar.events")
 LOOPBACK_PORT = 8765
 
 TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)

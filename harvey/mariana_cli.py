@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import webbrowser
+from pathlib import Path
 
 DKIM_SELECTORS = ("google", "selector1", "selector2", "default", "k1", "s1",
                   "dkim", "mail", "zoho", "mxvault")
@@ -164,7 +165,138 @@ def cmd_whatsapp_check(args):
     print()
 
 
+async def _ctx():
+    from harvey.brain import Brain
+    from harvey.config import load_config, load_env
+    from harvey.state import StateManager
+    config = load_config()
+    state = StateManager()
+    await state.init_db()
+    return config, load_env(), state, Brain(state, config.brain)
+
+
+def cmd_events(args):
+    from harvey.collectors.events import run_event_radar
+
+    async def go():
+        config, env, state, brain = await _ctx()
+        return await run_event_radar(state, brain, config, env, months=args.months,
+                                     max_queries=args.max_queries, estimate_only=args.estimate)
+    result = asyncio.run(go())
+    if args.estimate:
+        print(f"\n  {result['queries']} buscas, custo estimado US$ {result['estimated_cost_usd']}")
+        for q in result["sample"]:
+            print(f"    ex.: {q}")
+    else:
+        print(f"\n  {result['events']} eventos encontrados, {result['organizers']} organizadores "
+              "adicionados como empresas (sinal 'evento em ...').")
+        print("  Próximo: mariana profile  (lê os sites e acha os contatos)")
+    print()
+
+
+def cmd_samples(args):
+    from harvey.samples import write_briefs
+
+    async def go():
+        _, _, state, _ = await _ctx()
+        return await write_briefs(state, top=args.top)
+    path, leads = asyncio.run(go())
+    print(f"\n  {len(leads)} lead(s) para amostra. Briefing para o Gab: {path}")
+    print("  No Claude: /ogab <colar o briefing de um lead>\n")
+
+
+def cmd_sample_ready(args):
+    from harvey.samples import sample_ready
+
+    async def go():
+        config, _, state, brain = await _ctx()
+        return await sample_ready(state, brain, config, args.prospect, args.link)
+    channel = asyncio.run(go())
+    where = "Outbox" if channel == "email" else "Mensagens"
+    print(f"\n  Mensagem com a amostra criada ({channel}); aprove na aba {where}.\n")
+
+
+def cmd_proposal(args):
+    from harvey.proposal import build_proposal
+
+    async def go():
+        config, _, state, brain = await _ctx()
+        convo_id = args.conversation
+        if not convo_id and args.email:
+            prospect = await state.get_prospect_by_email(args.email)
+            for status in ("open", "needs_human", "closed"):
+                for c in await state.get_conversations_by_status(status):
+                    if prospect and c.prospect_id == prospect.id:
+                        convo_id = c.id
+        if not convo_id:
+            raise SystemExit("  Conversa não encontrada (use --conversation ID ou --email).")
+        return await build_proposal(state, brain, config, convo_id)
+    result = asyncio.run(go())
+    print(f"\n  Proposta: {result['path']}")
+    if not result["pdf"]:
+        print("  (Sem Chrome/Chromium pro PDF. Abra o HTML e salve como PDF, ou rode "
+              "'playwright install chromium'.)")
+    if not args.no_open:
+        webbrowser.open(Path(result["path"]).as_uri())
+    print()
+
+
+def cmd_calendar_check(args):
+    from harvey.integrations.calendar import CalendarClient, format_slots
+
+    async def go():
+        config, env, _, _ = await _ctx()
+        client = CalendarClient(config, env)
+        if not client.is_configured():
+            return None, config
+        return await client.get_available_slots(), config
+    slots, config = asyncio.run(go())
+    if slots is None:
+        print("\n  Agenda não conectada: ative a Calendar API no mesmo projeto do Google Cloud")
+        print("  e rode 'mariana gmail auth' de novo (pede a permissão da agenda).\n")
+        return
+    print(f"\n  Próximos horários livres: {format_slots(slots, config.persona.language) or 'nenhum'}\n")
+
+
+def cmd_notify_test(args):
+    from harvey.notify import notify
+
+    async def go():
+        from harvey.config import load_config, load_env
+        await notify(load_config(), load_env(), "Mariana: teste",
+                     "Se chegou, os avisos de resposta estão funcionando.")
+    asyncio.run(go())
+    print("\n  Aviso enviado (Mac + ntfy/Telegram se configurados).\n")
+
+
 def register(subparsers):
+    sub = subparsers.add_parser("eventos", help="Radar de eventos: organizadores com evento chegando")
+    sub.add_argument("--months", type=int, default=3, help="Janela em meses (padrão 3)")
+    sub.add_argument("--max-queries", type=int, default=24, help="Limite de buscas")
+    sub.add_argument("--estimate", action="store_true", help="Só mostrar o custo")
+    sub.set_defaults(func=cmd_events)
+
+    sub = subparsers.add_parser("amostras", help="Briefing de amostras para o Gab (/ogab)")
+    sub.add_argument("--top", type=int, default=5)
+    sub.set_defaults(func=cmd_samples)
+
+    sub = subparsers.add_parser("amostra-pronta", help="Criar a mensagem com a amostra pronta")
+    sub.add_argument("--prospect", required=True)
+    sub.add_argument("--link", required=True)
+    sub.set_defaults(func=cmd_sample_ready)
+
+    sub = subparsers.add_parser("proposta", help="Gerar proposta (PDF) a partir de uma conversa")
+    sub.add_argument("--conversation", default="")
+    sub.add_argument("--email", default="")
+    sub.add_argument("--no-open", action="store_true")
+    sub.set_defaults(func=cmd_proposal)
+
+    sub = subparsers.add_parser("agenda-check", help="Ver os próximos horários livres do Google Agenda")
+    sub.set_defaults(func=cmd_calendar_check)
+
+    sub = subparsers.add_parser("aviso-teste", help="Testar o aviso no Mac/celular")
+    sub.set_defaults(func=cmd_notify_test)
+
     sub = subparsers.add_parser(
         "onboard", help="Primeiro uso: a Mariana aprende tudo sobre você/empresa")
     sub.add_argument("--file", action="append",

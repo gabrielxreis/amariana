@@ -448,6 +448,39 @@ MIGRATIONS: list[str] = [
         WHERE campaign_id != '';
     CREATE INDEX IF NOT EXISTS idx_channel_status ON channel_outbox(channel, status);
     """,
+    # ── v13: replies on any channel + jobs (Mariana) ──
+    """
+    -- kind: first (cold opener), reply (answer in a conversation), sample
+    -- (message carrying a video sample), postjob (testimonial / referral /
+    -- re-engagement). Replies and post-job messages have no campaign, so the
+    -- (campaign, prospect, channel) guard above never blocks them.
+    ALTER TABLE channel_outbox ADD COLUMN kind TEXT DEFAULT 'first';
+    ALTER TABLE channel_outbox ADD COLUMN conversation_id TEXT DEFAULT '';
+
+    -- A closed deal. Drives proposals, delivery follow-up (testimonial and
+    -- referral), and re-engagement before the client's next event.
+    CREATE TABLE IF NOT EXISTS jobs (
+        id TEXT PRIMARY KEY,
+        prospect_id TEXT DEFAULT '',
+        conversation_id TEXT DEFAULT '',
+        company_name TEXT DEFAULT '',
+        contact_name TEXT DEFAULT '',
+        segment TEXT DEFAULT '',
+        service TEXT DEFAULT '',
+        value TEXT DEFAULT '',
+        status TEXT DEFAULT 'proposal',      -- proposal | won | delivered | lost
+        proposal_path TEXT DEFAULT '',
+        event_date TEXT DEFAULT '',
+        delivered_at TEXT DEFAULT '',
+        next_event_date TEXT DEFAULT '',
+        testimonial_requested_at TEXT DEFAULT '',
+        reengaged_at TEXT DEFAULT '',
+        notes TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+    """,
 ]
 
 BRAIN_PROVIDERS = ("claude", "codex")
@@ -986,7 +1019,7 @@ class StateManager:
 
     _CHANNEL_COLUMNS = frozenset({
         "status", "body", "note", "error", "message_id", "sent_at",
-        "opted_in", "mode", "target",
+        "opted_in", "mode", "target", "kind", "conversation_id",
     })
 
     @staticmethod
@@ -1011,6 +1044,8 @@ class StateManager:
         status: str = "pending_review",
         mode: str = "manual",
         opted_in: bool = False,
+        kind: str = "first",
+        conversation_id: str = "",
     ) -> str | None:
         """Queue one draft. None when this (campaign, prospect, channel)
         already has one."""
@@ -1020,11 +1055,11 @@ class StateManager:
                 """INSERT OR IGNORE INTO channel_outbox
                    (id, channel, campaign_id, prospect_id, company_id,
                     contact_name, company_name, target, language, body, note,
-                    status, opted_in, mode)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    status, opted_in, mode, kind, conversation_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (item_id, channel, campaign_id, prospect_id, company_id,
                  contact_name, company_name, target, language, body, note,
-                 status, int(opted_in), mode),
+                 status, int(opted_in), mode, kind, conversation_id),
             )
             await db.commit()
             return item_id if cursor.rowcount > 0 else None
@@ -1103,6 +1138,77 @@ class StateManager:
             )
             await db.commit()
             return cursor.rowcount
+
+    async def channel_target_for_prospect(self, prospect_id: str, channel: str) -> dict | None:
+        """The latest draft on a channel for a prospect (to answer them there)."""
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT * FROM channel_outbox WHERE prospect_id = ? AND channel = ? "
+                "ORDER BY created_at DESC LIMIT 1", (prospect_id, channel)
+            ) as cursor:
+                row = await cursor.fetchone()
+        return self._channel_row(row) if row else None
+
+    # ── Jobs (Mariana) ──
+
+    _JOB_COLUMNS = frozenset({
+        "company_name", "contact_name", "segment", "service", "value", "status",
+        "proposal_path", "event_date", "delivered_at", "next_event_date",
+        "testimonial_requested_at", "reengaged_at", "notes", "conversation_id",
+    })
+
+    async def add_job(self, *, prospect_id: str, **fields) -> str:
+        job_id = _new_id()
+        data = {k: v for k, v in fields.items() if k in self._JOB_COLUMNS}
+        cols = ["id", "prospect_id", *data.keys()]
+        async with self._connect() as db:
+            await db.execute(
+                f"INSERT INTO jobs ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+                (job_id, prospect_id, *data.values()),
+            )
+            await db.commit()
+        return job_id
+
+    async def get_jobs(self, status: str | None = None) -> list[dict]:
+        sql, params = "SELECT * FROM jobs", []
+        if status:
+            sql += " WHERE status = ?"
+            params.append(status)
+        sql += " ORDER BY created_at DESC"
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(sql, params) as cursor:
+                return [dict(r) for r in await cursor.fetchall()]
+
+    async def get_job(self, job_id: str) -> dict | None:
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)) as cursor:
+                row = await cursor.fetchone()
+        return dict(row) if row else None
+
+    async def job_for_conversation(self, conversation_id: str) -> dict | None:
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT * FROM jobs WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1",
+                (conversation_id,),
+            ) as cursor:
+                row = await cursor.fetchone()
+        return dict(row) if row else None
+
+    async def update_job(self, job_id: str, **kwargs):
+        fields = {k: v for k, v in kwargs.items() if k in self._JOB_COLUMNS}
+        if not fields:
+            return
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        async with self._connect() as db:
+            await db.execute(
+                f"UPDATE jobs SET {sets}, updated_at = ? WHERE id = ?",
+                (*fields.values(), _utcnow().isoformat(), job_id),
+            )
+            await db.commit()
 
     async def find_outbox_by_message_id(self, message_id: str) -> dict | None:
         if not message_id:

@@ -10,7 +10,7 @@
 
 <header>
   <div class="brand">
-    <div class="mark">H</div>
+    <div class="mark">M</div>
     <div>
       <h1>Mariana</h1>
       <div class="tagline">Secretária de audiovisual</div>
@@ -36,6 +36,8 @@
   <button onclick="showTab('campaigns', this)">Campaigns</button>
   <button onclick="showTab('outbox', this)">Outbox<span class="nav-count" id="nav-outbox"></span></button>
   <button onclick="showTab('channels', this)">Mensagens<span class="nav-count" id="nav-channels"></span></button>
+  <button onclick="showTab('jobs', this)">Jobs</button>
+  <button onclick="showTab('metrics', this)">Números</button>
   <button onclick="showTab('conversations', this)">Conversations</button>
   <button onclick="showTab('activity', this)">Activity</button>
   <button onclick="showTab('usage', this)">Usage</button>
@@ -168,6 +170,25 @@
        aprova, abre e envia da sua conta. Nenhuma conta é automatizada.</p>
   </div>
   <div id="channels-list"></div>
+</div>
+
+<!-- Jobs: proposals, won, delivered -->
+<div id="jobs" class="section">
+  <div class="section-head">
+    <h2>Jobs</h2>
+    <p>Propostas, trabalhos fechados e entregues. Marque a entrega e a data do próximo
+       evento do cliente: a Mariana pede depoimento e indicação e volta a falar antes do evento.</p>
+  </div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- Números: reply rate by market, channel, segment -->
+<div id="metrics" class="section">
+  <div class="section-head">
+    <h2>Números</h2>
+    <p>Quem responde e quem fecha, por mercado, canal e tipo de cliente.</p>
+  </div>
+  <div id="metrics-list"></div>
 </div>
 
 <!-- Outbox: the decisions desk -->

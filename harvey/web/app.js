@@ -170,6 +170,8 @@ function loadCurrentTab() {
     case 'campaigns': loadCampaigns(); break;
     case 'outbox': loadOutbox(); break;
     case 'channels': loadChannels(); break;
+    case 'jobs': loadJobs(); break;
+    case 'metrics': loadMetrics(); break;
     case 'conversations': loadConversations(); break;
     case 'activity': loadActivity(); break;
     case 'usage': loadUsage(); break;
@@ -1317,7 +1319,11 @@ async function loadConversations() {
       (c.company ? ' <span style="color:var(--text-3);font-weight:500">&mdash; ' + escHtml(c.company) + '</span>' : '') + '</h3>' +
       '<div class="meta">' + badge(c.status) + (c.intent ? badge(c.intent) : '') +
       '<span>' + escHtml(c.prospect_email || '') + '</span><span>' + formatDate(c.updated_at) + '</span></div>' +
-      (threadHtml || '<p style="color:var(--text-3);font-size:13px">No messages in this thread yet.</p>') + '</div>';
+      (threadHtml || '<p style="color:var(--text-3);font-size:13px">No messages in this thread yet.</p>') +
+      '<div class="desk-actions" style="margin-top:10px">' +
+        '<button class="btn btn-secondary btn-sm" onclick="convoProposal(\'' + c.id + '\')">Gerar proposta</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="convoWon(\'' + c.id + '\')">Fechou</button>' +
+      '</div></div>';
   }
   el.innerHTML = html;
 }
@@ -1408,7 +1414,9 @@ async function loadChannels() {
     const sendLabel = it.channel === 'whatsapp' ? 'Abrir no WhatsApp' : 'Copiar e abrir perfil';
     return '<div class="card" style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
-        '<div><b>' + escHtml(CHANNEL_LABEL[it.channel] || it.channel) + '</b> &middot; ' +
+        '<div><b>' + escHtml(CHANNEL_LABEL[it.channel] || it.channel) + '</b>' +
+          (it.kind === 'reply' ? ' (resposta)' : it.kind === 'postjob' ? ' (pós-job)' : it.kind === 'sample' ? ' (amostra)' : '') +
+          ' &middot; ' +
           escHtml(who) + ' <span class="muted">(' + escHtml(it.language || '') + ')</span></div>' +
         badge(it.status) + '</div>' + warn + note +
       (it.note ? '<div class="muted" style="font-size:12px;margin:8px 0 4px">Mensagem</div>' : '') +
@@ -1426,7 +1434,9 @@ async function loadChannels() {
   const sentRows = (data.sent || []).map(r =>
     '<tr><td>' + escHtml(CHANNEL_LABEL[r.channel] || r.channel) + '</td><td>' +
     escHtml(r.company_name || r.contact_name || r.target) + '</td><td class="muted">' +
-    formatDate(r.sent_at) + '</td></tr>').join('');
+    formatDate(r.sent_at) + '</td><td>' +
+    '<button class="btn btn-secondary btn-sm" onclick="channelReplied(\'' + r.id + '\')">Respondeu</button>' +
+    '</td></tr>').join('');
 
   el.innerHTML =
     (pending.length || (data.approved || []).length
@@ -1434,7 +1444,7 @@ async function loadChannels() {
       : '<div class="card">' + emptyState('&#10003;', 'Nenhuma mensagem esperando',
           'Quando a Mariana montar uma campanha, as mensagens de WhatsApp, LinkedIn e Instagram aparecem aqui.') + '</div>') +
     (sentRows ? '<div class="card"><h2>Enviadas</h2><div class="table-card"><table><thead><tr>' +
-      '<th>Canal</th><th>Para</th><th>Quando</th></tr></thead><tbody>' + sentRows +
+      '<th>Canal</th><th>Para</th><th>Quando</th><th></th></tr></thead><tbody>' + sentRows +
       '</tbody></table></div></div>' : '');
 }
 
@@ -1449,11 +1459,123 @@ async function channelOpen(id) {
 }
 
 function toastMsg(msg) {
-  if (typeof toast === 'function') { toast(msg); return; }
-  console.log(msg);
+  showToast(msg, 'success');
 }
 
 async function channelAct(id, action) {
   await api('/api/channels/' + encodeURIComponent(id) + '/' + action, {method: 'POST'});
   loadChannels();
+}
+
+async function channelReplied(id) {
+  const text = window.prompt('Cole aqui o que a pessoa respondeu:');
+  if (!text || !text.trim()) return;
+  const res = await api('/api/channels/' + encodeURIComponent(id) + '/replied', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text: text}),
+  });
+  if (res && res.success) {
+    toastMsg('Resposta registrada. Emails pendentes cancelados; rascunho de resposta em Mensagens.');
+  } else {
+    alert((res && res.message) || 'Não deu certo.');
+  }
+  loadChannels();
+}
+
+// ── Conversas → proposta / fechou ──
+async function convoProposal(id) {
+  showToast('Montando a proposta...', 'success');
+  const r = await fetch('/api/conversations/' + encodeURIComponent(id) + '/proposal', {method: 'POST'});
+  const data = await r.json().catch(() => null);
+  if (data && data.success) {
+    window.open('/api/proposals/' + encodeURIComponent(data.file), '_blank', 'noopener');
+    showToast('Proposta pronta (aba Jobs).', 'success');
+  } else {
+    alert('Não consegui: ' + ((data && data.message) || 'erro'));
+  }
+}
+
+async function convoWon(id) {
+  const value = window.prompt('Fechou. Valor do job (opcional):', '') ;
+  if (value === null) return;
+  const next = window.prompt('Data do próximo evento desse cliente, se tiver (AAAA-MM-DD):', '');
+  await api('/api/conversations/' + encodeURIComponent(id) + '/job', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({value: value || '', next_event_date: next || ''}),
+  });
+  showToast('Job registrado.', 'success');
+  loadConversations();
+}
+
+// ── Jobs ──
+const JOB_LABEL = {proposal: 'Proposta', won: 'Fechado', delivered: 'Entregue', lost: 'Perdido'};
+
+async function loadJobs() {
+  const el = document.getElementById('jobs-list');
+  const data = await api('/api/jobs');
+  if (!data) { el.innerHTML = offlineState(); return; }
+  if (data.error) { el.innerHTML = '<div class="card">' + escHtml(data.error) + '</div>'; return; }
+  if (!data.length) {
+    el.innerHTML = '<div class="card">' + emptyState('&#127916;', 'Nenhum job ainda',
+      'Em Conversas, use "Gerar proposta" ou "Fechou". O job aparece aqui.') + '</div>';
+    return;
+  }
+  let h = '<div class="card"><div class="table-card"><table><thead><tr>' +
+    '<th>Cliente</th><th>Serviço</th><th>Valor</th><th>Status</th><th>Próx. evento</th><th>Proposta</th><th></th>' +
+    '</tr></thead><tbody>';
+  for (const j of data) {
+    const prop = j.proposal_file
+      ? '<a href="/api/proposals/' + encodeURIComponent(j.proposal_file) + '" target="_blank">abrir</a>' : '';
+    const btn = (action, label) => '<button class="btn btn-secondary btn-sm" onclick="jobAct(\'' +
+      j.id + '\',\'' + action + '\')">' + label + '</button> ';
+    h += '<tr><td><b>' + escHtml(j.company_name || j.contact_name) + '</b><br><span class="muted">' +
+      escHtml(j.contact_name || '') + '</span></td><td>' + escHtml(j.service || '') + '</td><td>' +
+      escHtml(j.value || '') + '</td><td>' + escHtml(JOB_LABEL[j.status] || j.status) + '</td><td>' +
+      escHtml(j.next_event_date || '') + '</td><td>' + prop + '</td><td>' +
+      (j.status === 'proposal' ? btn('won', 'Fechou') + btn('lost', 'Perdeu') : '') +
+      (j.status === 'won' ? btn('delivered', 'Entreguei') : '') +
+      btn('update', 'Próx. evento') + '</td></tr>';
+  }
+  el.innerHTML = h + '</tbody></table></div></div>';
+}
+
+async function jobAct(id, action) {
+  const body = {};
+  if (action === 'update') {
+    const d = window.prompt('Data do próximo evento do cliente (AAAA-MM-DD):', '');
+    if (!d) return;
+    body.next_event_date = d;
+  }
+  await api('/api/jobs/' + encodeURIComponent(id) + '/' + action, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
+  });
+  loadJobs();
+}
+
+// ── Números ──
+async function loadMetrics() {
+  const el = document.getElementById('metrics-list');
+  const data = await api('/api/metrics');
+  if (!data) { el.innerHTML = offlineState(); return; }
+  if (data.error) { el.innerHTML = '<div class="card">' + escHtml(data.error) + '</div>'; return; }
+  const t = data.total || {};
+  const table = (title, rows, label) => {
+    if (!rows || !rows.length) return '';
+    let h = '<div class="card"><h2>' + title + '</h2><div class="table-card"><table><thead><tr><th>' + label +
+      '</th><th>Contatados</th><th>Responderam</th><th>Taxa</th><th>Fechados</th></tr></thead><tbody>';
+    for (const r of rows) {
+      h += '<tr><td>' + escHtml(r.key) + '</td><td>' + r.contacted + '</td><td>' + r.replied +
+        '</td><td><b>' + r.reply_rate + '%</b></td><td>' + r.won + '</td></tr>';
+    }
+    return h + '</tbody></table></div></div>';
+  };
+  el.innerHTML =
+    '<div class="card"><h2>Geral</h2><p style="font-size:15px">' + (t.contacted || 0) + ' contatados &middot; ' +
+      (t.replied || 0) + ' responderam (<b>' + (t.reply_rate || 0) + '%</b>) &middot; ' +
+      (t.won || 0) + ' fechados (' + (t.win_rate || 0) + '%)</p></div>' +
+    table('Por mercado', data.by_market, 'Mercado') +
+    table('Por canal', data.by_channel, 'Canal') +
+    table('Por tipo de cliente', data.by_segment, 'Segmento') +
+    (t.contacted ? '' : '<div class="card">' + emptyState('&#128202;', 'Sem dados ainda',
+      'Os números aparecem quando as primeiras mensagens forem enviadas.') + '</div>');
 }

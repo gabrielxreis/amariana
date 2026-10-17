@@ -89,6 +89,7 @@ class Handler:
         self.brain = brain
         self.state = state
         self.config = config
+        self.env = env
         self.instantly = InstantlyClient(env.instantly_api_key)
         self.provider = get_mail_provider(config, env)
         self.skills = ""
@@ -200,10 +201,20 @@ class Handler:
         reply_uuid: str,
         campaign_id: str = "",
         reply_meta: dict | None = None,
+        prospect=None,
+        channel: str = "email",
     ):
-        """Classify, record, and respond to a single reply."""
+        """Classify, record, and respond to a single reply.
+
+        ``channel`` is where the reply came from. Email replies are found by
+        address; WhatsApp / LinkedIn / Instagram replies arrive with their
+        prospect already known (pasted in the dashboard, or a Cloud API
+        webhook) and are answered on the same channel.
+        """
         # Find the prospect by email (indexed lookup)
-        prospect = await self.state.get_prospect_by_email(lead_email)
+        if prospect is None:
+            prospect = await self.state.get_prospect_by_email(lead_email)
+        lead_email = lead_email or prospect.email if prospect else lead_email
         if not prospect:
             logger.warning(f"Handler: No prospect found for {lead_email}")
             return
@@ -233,6 +244,12 @@ class Handler:
         else:
             intent = await self._classify_intent(reply_text, prospect)
         logger.info(f"Handler: Intent for {lead_email}: {intent}")
+        try:
+            from harvey.notify import notify_reply
+            who = prospect.full_name() or prospect.company or lead_email
+            await notify_reply(self.config, self.env, intent, who, channel, reply_text)
+        except Exception as e:
+            logger.debug(f"Handler: notify failed: {e}")
 
         # 2. The conversation as it will be, in memory only. Nothing about
         # this reply is stored until every model call it needs has succeeded:
@@ -251,11 +268,12 @@ class Handler:
                 id="",
                 prospect_id=prospect.id,
                 campaign_id=campaign_id,
-                channel="email",
+                channel=channel,
                 intent=intent,
                 status="open",
             )
         convo.thread.append(Message(sender="prospect", content=reply_text))
+        convo.channel = channel  # the draft is shaped for where they wrote
         convo.intent = intent
         old_stage = convo.stage
         convo.stage = self._determine_stage(intent, convo.stage, reply_text)
@@ -336,6 +354,12 @@ class Handler:
                 f"Handler: Could not generate a response for {lead_email}. "
                 "Flagged for human review."
             )
+            return
+
+        # Answer on the channel they used. Non-email replies become drafts
+        # in the dashboard's Mensagens tab, sent by you.
+        if channel != "email":
+            await self._queue_channel_reply(response, prospect, convo, channel, intent)
             return
 
         # Send the response — natively through the outbox approval ladder,
@@ -502,6 +526,87 @@ class Handler:
                          "response_preview": response[:100]},
             )
 
+    async def _queue_channel_reply(self, response: str, prospect, convo, channel: str,
+                                   intent: str):
+        """Draft the answer on WhatsApp / LinkedIn / Instagram."""
+        last = await self.state.channel_target_for_prospect(prospect.id, channel)
+        target = (last or {}).get("target", "")
+        if not target and channel == "whatsapp":
+            from harvey.integrations.whatsapp import normalize_phone
+            target = normalize_phone(prospect.phone, self.config.channels.whatsapp.default_country_code)
+        if not target and channel == "linkedin":
+            target = prospect.linkedin_url
+        item_id = await self.state.add_channel_item(
+            channel=channel, target=target, body=response, kind="reply",
+            conversation_id=convo.id, prospect_id=prospect.id,
+            company_id=prospect.company_id, contact_name=prospect.full_name(),
+            company_name=prospect.company or (last or {}).get("company_name", ""),
+            language=(last or {}).get("language", ""),
+            # They wrote first, so WhatsApp replies may go through the API.
+            opted_in=(channel == "whatsapp"),
+            mode=(self.config.channels.whatsapp.mode if channel == "whatsapp" else "manual"),
+        )
+        if item_id:
+            logger.info(f"Handler: {channel} reply to {prospect.full_name()} waiting "
+                        f"in Mensagens ({intent}).")
+            await self.state.log_action(
+                action_type="reply_queued", agent="handler",
+                details={"channel": channel, "intent": intent,
+                         "response_preview": response[:100]},
+            )
+
+    async def handle_external_reply(self, prospect, reply_text: str, channel: str) -> str:
+        """A reply that arrived outside email (pasted in the dashboard or via
+        the WhatsApp webhook). Stops every queued email and draft for the
+        person, records the conversation, and drafts the answer on that
+        channel. Returns the conversation id."""
+        self.skills = self.skills or self.brain.load_skills_for_agent("handler")
+        await self._process_reply(
+            prospect.email, reply_text, reply_uuid="", prospect=prospect, channel=channel,
+        )
+        convos = await self.state.get_conversations_by_status("open")
+        convos += await self.state.get_conversations_by_status("needs_human")
+        convo = next((c for c in convos if c.prospect_id == prospect.id), None)
+        return convo.id if convo else ""
+
+    async def _reply_context(self, intent: str, prospect, convo) -> str:
+        """Real free slots and the right portfolio pieces, for the draft."""
+        lines = []
+        language = "pt-BR"
+        try:
+            from harvey import market
+            mk = await market.for_prospect(self.state, prospect,
+                                           getattr(self.config.persona, "language", "pt-BR"))
+            language = market.language(mk)
+        except Exception:
+            pass
+        offer = self.config.product.offer
+        if intent in ("interested", "question"):
+            if offer.booking_method == "calendar_link" and offer.booking_url:
+                lines.append(f"Booking link to offer for a call: {offer.booking_url}")
+            else:
+                try:
+                    from harvey.integrations.calendar import CalendarClient, format_slots
+                    slots = await CalendarClient(self.config, self.env).get_available_slots()
+                    if slots:
+                        lines.append("Real free times on the calendar (offer these, exactly): "
+                                     + format_slots(slots, language))
+                except Exception as e:
+                    logger.debug(f"Handler: calendar unavailable: {e}")
+        try:
+            from harvey import portfolio
+            company = await self.state.get_company(prospect.company_id) if prospect.company_id else None
+            pieces = portfolio.match(prospect.industry, prospect.company, prospect.title,
+                                     company.name if company else "",
+                                     company.description if company else "")
+            if pieces:
+                lines.append("Portfolio pieces that match this client (share ONE link only "
+                             "if they asked to see work, or if it helps the next step):\n"
+                             + portfolio.describe(pieces))
+        except Exception as e:
+            logger.debug(f"Handler: portfolio match failed: {e}")
+        return "\n".join(lines)
+
     async def _classify_intent(self, reply_text: str, prospect) -> str:
         """Ask the brain to classify the reply's intent."""
         prompt = f"""Classify this email reply into exactly ONE category:
@@ -596,7 +701,7 @@ Respond with ONLY the category label, nothing else."""
         """Generate an appropriate response based on intent."""
         # Build conversation history for context
         history = "\n".join(
-            f"{'Harvey' if m.sender == 'harvey' else prospect.full_name()}: {m.content}"
+            f"{'Me' if m.sender == 'harvey' else prospect.full_name()}: {m.content}"
             for m in convo.thread[-6:]  # Last 6 messages for context
         )
 
@@ -625,7 +730,9 @@ Conversation so far:
 
 The prospect's intent is: {intent}
 {objection_context}
+{await self._reply_context(intent, prospect, convo)}
 
+Reply in the same language the prospect wrote in.
 Write a reply that:"""
 
         if intent == "interested":
@@ -653,7 +760,11 @@ Write a reply that:"""
 - Makes it easy for them to refer (one-line ask)
 - Under 50 words"""
 
-        prompt += "\n\nWrite ONLY the email body. No subject line, no greeting label, no signature block, no markdown."
+        if convo.channel and convo.channel != "email":
+            prompt += (f"\n\nThis is a {convo.channel} message: shorter than an email, "
+                       "conversational, no subject, no signature, no markdown.")
+        else:
+            prompt += "\n\nWrite ONLY the email body. No subject line, no greeting label, no signature block, no markdown."
 
         response = await self.brain.think(
             prompt, session_id="harvey-handler",
