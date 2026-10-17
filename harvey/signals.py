@@ -277,6 +277,64 @@ SIGNAL_CATALOG: list[dict] = [
         "cost_note": "1 verification credit (free tiers available)",
         "confidence_floor": 0.0,
     },
+    # ── Audiovisual (Mariana): does this business already use video? ──
+    {
+        "code": "NO_VIDEO_ON_SITE",
+        "label": "No video on the website",
+        "description": (
+            "The homepage has no embedded video at all (no YouTube, Vimeo or "
+            "<video> player). For a filmmaker or editor this is the clearest "
+            "gap there is: a business that sells something visual and shows "
+            "it with stills only."
+        ),
+        "category": "profile",
+        "value_type": "bool",
+        "collector": "profile",
+        "cost_note": "free (homepage HTML)",
+        "confidence_floor": 0.0,
+    },
+    {
+        "code": "HAS_YOUTUBE_CHANNEL",
+        "label": "Links a YouTube channel",
+        "description": (
+            "The site links to a YouTube channel. They already believe in "
+            "video, so the angle is quality, consistency or editing volume, "
+            "not convincing them video matters."
+        ),
+        "category": "profile",
+        "value_type": "text",
+        "collector": "profile",
+        "cost_note": "free (homepage HTML)",
+        "confidence_floor": 0.0,
+    },
+    {
+        "code": "INSTAGRAM_PROFILE",
+        "label": "Instagram profile",
+        "description": (
+            "The business's Instagram, linked from its site. Where short-form "
+            "video (Reels) lives, and a channel to reach them by DM when "
+            "there is no email."
+        ),
+        "category": "profile",
+        "value_type": "text",
+        "collector": "profile",
+        "cost_note": "free (homepage HTML)",
+        "confidence_floor": 0.0,
+    },
+    {
+        "code": "LINKEDIN_COMPANY",
+        "label": "LinkedIn company page",
+        "description": (
+            "The company's LinkedIn page, linked from its site. Used to reach "
+            "decision makers abroad, where LinkedIn is the normal channel "
+            "for business outreach."
+        ),
+        "category": "profile",
+        "value_type": "text",
+        "collector": "profile",
+        "cost_note": "free (homepage HTML)",
+        "confidence_floor": 0.0,
+    },
     {
         "code": "CONTACT_FORM_URL",
         "label": "Contact form available",

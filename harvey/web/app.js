@@ -44,7 +44,7 @@ function escHtml(s) {
 
 // ── One status vocabulary ──
 //
-// Harvey's tables each carry their own words for state: a prospect is `new`,
+// Mariana's tables each carry their own words for state: a prospect is `new`,
 // a campaign is `draft`, an email is `pending_review`, a signal is `proposed`.
 // Five of those mean "waiting on you" and the old dashboard styled every one
 // differently. Everything now resolves through this map, so a status reads the
@@ -169,11 +169,12 @@ function loadCurrentTab() {
     case 'prospects': loadProspects(); break;
     case 'campaigns': loadCampaigns(); break;
     case 'outbox': loadOutbox(); break;
+    case 'channels': loadChannels(); break;
     case 'conversations': loadConversations(); break;
     case 'activity': loadActivity(); break;
     case 'usage': loadUsage(); break;
     case 'settings': loadSettings(); break;
-    case 'controls': loadHarveyStatus(); loadLogs(); break;
+    case 'controls': loadMarianaStatus(); loadLogs(); break;
   }
 }
 
@@ -193,7 +194,7 @@ async function loadToday() {
     el.innerHTML = '<div class="queue-clear">' +
       '<div class="glyph">&#10003;</div><div>' +
       '<div class="qtitle">Nothing needs you</div>' +
-      '<div class="qdetail">Harvey has everything it needs. Anything that requires a ' +
+      '<div class="qdetail">Mariana has everything it needs. Anything that requires a ' +
       'decision — an email to approve, a signal to confirm — shows up here.</div>' +
       '</div></div>';
     return;
@@ -235,7 +236,7 @@ async function loadTodayActivity() {
   const data = await api('/api/activity');
   if (!Array.isArray(data) || !data.length) {
     el.innerHTML = '<p class="muted" style="font-size:12.5px">' +
-      'Nothing yet. Every action Harvey takes shows up here.</p>';
+      'Nothing yet. Every action Mariana takes shows up here.</p>';
     return;
   }
   el.innerHTML = '<div class="activity-feed">' + data.slice(0, 12).map(a =>
@@ -325,7 +326,7 @@ async function loadSetupStatus() {
     '</div>';
 }
 
-// ── Signals: Harvey proposes, you confirm ──
+// ── Signals: Mariana proposes, you confirm ──
 
 async function loadSignals() {
   const data = await api('/api/signals');
@@ -411,7 +412,7 @@ async function setSignals(codes, status) {
     showToast(
       status === 'confirmed'
         ? 'Confirmed ' + data.changed + ' signal' + (data.changed === 1 ? '' : 's') +
-          ' — Harvey will collect ' + (data.changed === 1 ? 'it' : 'them') + ' from now on.'
+          ' — Mariana will collect ' + (data.changed === 1 ? 'it' : 'them') + ' from now on.'
         : data.changed + ' signal' + (data.changed === 1 ? '' : 's') + ' turned off.',
       'success');
   } else {
@@ -551,7 +552,7 @@ function renderDiscoverResult(report, running) {
   const el = document.getElementById('discover-result');
   if (running) {
     el.innerHTML = '<div class="card"><h2>Running…</h2>' +
-      '<p class="muted" style="font-size:13px">Harvey is working through the ' +
+      '<p class="muted" style="font-size:13px">Mariana is working through the ' +
       'queries. Results land in Companies, and the run log is on Today.</p></div>';
     return;
   }
@@ -790,7 +791,7 @@ async function testInstantly() {
 
 // ── Controls ──
 
-async function loadHarveyStatus() {
+async function loadMarianaStatus() {
   const data = await api('/api/harvey/status');
   const headerDot = document.getElementById('header-dot');
   const headerText = document.getElementById('header-status-text');
@@ -803,7 +804,7 @@ async function loadHarveyStatus() {
   const running = !!data.running;
 
   headerDot.className = 'status-dot ' + (running ? 'running' : 'stopped');
-  headerText.textContent = running ? 'Harvey is running' : 'Harvey is stopped';
+  headerText.textContent = running ? 'Mariana is running' : 'Mariana is stopped';
   document.getElementById('control-dot').className = 'dot ' + (running ? 'running' : 'stopped');
   const label = document.getElementById('control-label');
   label.className = 'label ' + (running ? 'running' : 'stopped');
@@ -815,31 +816,31 @@ async function loadHarveyStatus() {
     if (data.started_at) info += ' &middot; started ' + formatDate(data.started_at);
     meta.innerHTML = info;
   } else {
-    meta.innerHTML = 'Harvey wakes every few minutes, does what needs doing, and sleeps.';
+    meta.innerHTML = 'Mariana wakes every few minutes, does what needs doing, and sleeps.';
   }
 
   document.getElementById('btn-start').style.display = running ? 'none' : '';
   document.getElementById('btn-stop').style.display = running ? '' : 'none';
 }
 
-async function startHarvey() {
+async function startMariana() {
   const btn = document.getElementById('btn-start');
   btn.disabled = true;
   const data = await api('/api/harvey/start', {method: 'POST'});
-  if (data && data.success) showToast('Harvey started.', 'success');
+  if (data && data.success) showToast('Mariana started.', 'success');
   else showToast((data && data.message) || 'Failed to start.', 'error');
   btn.disabled = false;
-  loadHarveyStatus();
+  loadMarianaStatus();
 }
 
-async function stopHarvey() {
+async function stopMariana() {
   const btn = document.getElementById('btn-stop');
   btn.disabled = true;
   const data = await api('/api/harvey/stop', {method: 'POST'});
-  if (data && data.success) showToast('Harvey stopped.', 'success');
+  if (data && data.success) showToast('Mariana stopped.', 'success');
   else showToast((data && data.message) || 'Failed to stop.', 'error');
   btn.disabled = false;
-  loadHarveyStatus();
+  loadMarianaStatus();
 }
 
 async function loadLogs() {
@@ -850,7 +851,7 @@ async function loadLogs() {
     el.textContent = data.lines.join('\n');
     if (stick) el.scrollTop = el.scrollHeight;
   } else {
-    el.textContent = 'No logs yet. Start Harvey to see activity.';
+    el.textContent = 'No logs yet. Start Mariana to see activity.';
   }
 }
 
@@ -862,7 +863,7 @@ async function loadStats() {
   if (!data) { grid.innerHTML = offlineState(); return; }
   if (data.error) {
     grid.innerHTML = emptyState('&#9670;', 'No pipeline data yet',
-      'Start Harvey from the <b>Controls</b> tab and it will begin prospecting, writing, and sending on its own.');
+      'Start Mariana from the <b>Controls</b> tab and it will begin prospecting, writing, and sending on its own.');
     return;
   }
   const p = data.prospects || {}, c = data.campaigns || {}, v = data.conversations || {};
@@ -930,9 +931,9 @@ function quotaCardHtml(data) {
   let html = '<h2>' + escHtml(title) + '</h2>';
   if (!data.quota || !Object.keys(data.quota).length) {
     const why = provider === 'codex'
-      ? "Quota unavailable: Harvey couldn't read your ChatGPT plan's limits (check codex login, the Codex CLI version, and network)."
-      : "Quota unavailable: Harvey couldn't read your Claude subscription's limits (check claude login and network).";
-    return html + '<p class="muted">' + escHtml(why) + ' Until it can, budgets count Harvey\'s own calls.</p>';
+      ? "Quota unavailable: Mariana couldn't read your ChatGPT plan's limits (check codex login, the Codex CLI version, and network)."
+      : "Quota unavailable: Mariana couldn't read your Claude subscription's limits (check claude login and network).";
+    return html + '<p class="muted">' + escHtml(why) + ' Until it can, budgets count Mariana\'s own calls.</p>';
   }
   const labels = {five_hour: '5-hour window', seven_day: 'Weekly', primary: 'Primary window',
                   secondary: 'Secondary window', limit_reached: 'Usage limit reached'};
@@ -1020,7 +1021,7 @@ async function loadUsage() {
   const anyRows = (data.by_agent || []).length || (data.by_task || []).length;
   if (!anyRows) {
     tablesEl.innerHTML = emptyState('&#9680;', 'No usage recorded yet',
-      'Once Harvey starts making model calls (Claude or Codex), every one is logged here with exact calls and tokens by provider, agent and task.');
+      'Once Mariana starts making model calls (Claude or Codex), every one is logged here with exact calls and tokens by provider, agent and task.');
   } else {
     const providers = data.by_provider || [];
     const showProviders = providers.length > 1 || (providers.length === 1 && providers[0].provider !== 'claude');
@@ -1073,7 +1074,7 @@ async function loadOutbox() {
 
   desk.innerHTML = pending.length ? renderDesk(pending, _desk.i) :
     '<div class="card">' + emptyState('&#10003;', 'Nothing to review',
-      'Every draft Harvey writes lands here first. Approve one and it sends on schedule.') +
+      'Every draft Mariana writes lands here first. Approve one and it sends on schedule.') +
     '</div>';
 
   const table = (title, rows, cols) => {
@@ -1177,7 +1178,7 @@ async function loadCompanies() {
   _companies = data;
   if (!data.length) {
     el.innerHTML = emptyState('&#9906;', 'No companies yet',
-      'Harvey\'s Scout agent hasn\'t researched any companies. Finish <b>Setup</b>, then start Harvey from the <b>Controls</b> tab.');
+      'Mariana\'s Scout agent hasn\'t researched any companies. Finish <b>Setup</b>, then start Mariana from the <b>Controls</b> tab.');
     return;
   }
   let html = '<div class="table-card"><table><thead><tr><th>Company</th><th>Domain</th><th>Industry</th><th>Size</th><th>Location</th><th>Contacts</th><th>Source</th><th>Added</th></tr></thead><tbody>';
@@ -1228,7 +1229,7 @@ async function submitFeedback(entityType, entityId, promptText) {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({entity_type: entityType, entity_id: entityId, comment: comment})
   });
-  if (data && data.success) showToast('Feedback saved. Harvey will take it into account.', 'success');
+  if (data && data.success) showToast('Feedback saved. Mariana will take it into account.', 'success');
   else showToast((data && data.message) || 'Could not save feedback.', 'error');
 }
 
@@ -1249,7 +1250,7 @@ async function loadProspects() {
   _prospects = data;
   if (!data.length) {
     el.innerHTML = emptyState('&#9673;', 'No contacts yet',
-      'Harvey hasn\'t found any prospects. Once it\'s running, the Scout agent searches the web for people matching your ideal customer profile in <b>harvey.yaml</b>.');
+      'Mariana hasn\'t found any prospects. Once it\'s running, the Scout agent searches the web for people matching your ideal customer profile in <b>harvey.yaml</b>.');
     return;
   }
   let html = '<div class="table-card"><table><thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Email</th><th>Phone</th><th>Status</th><th>Source</th><th>Added</th><th></th></tr></thead><tbody>';
@@ -1272,7 +1273,7 @@ async function loadCampaigns() {
   _campaigns = data;
   if (!data.length) {
     el.innerHTML = emptyState('&#9993;', 'No campaigns yet',
-      'The Writer agent hasn\'t drafted any sequences. It kicks in automatically once Harvey has scored prospects to write for.');
+      'The Writer agent hasn\'t drafted any sequences. It kicks in automatically once Mariana has scored prospects to write for.');
     return;
   }
   let html = '';
@@ -1327,7 +1328,7 @@ async function loadActivity() {
   if (!data) { el.innerHTML = offlineState(); return; }
   if (!data.length) {
     el.innerHTML = emptyState('&#9202;', 'No activity yet',
-      'Harvey hasn\'t taken any actions. Every prospect found, email written, and reply handled will appear here the moment it happens.');
+      'Mariana hasn\'t taken any actions. Every prospect found, email written, and reply handled will appear here the moment it happens.');
     return;
   }
   let html = '<div class="activity-feed">';
@@ -1345,10 +1346,10 @@ loadToday();
 loadSetupStatus();
 loadRuns();
 loadTodayActivity();
-loadHarveyStatus();
+loadMarianaStatus();
 
 // Agent status: quick poll
-setInterval(loadHarveyStatus, 8000);
+setInterval(loadMarianaStatus, 8000);
 
 // Nav counts stay live wherever you are, so "something needs me" is visible
 // from any tab without polling that tab's contents.
@@ -1376,3 +1377,83 @@ setInterval(() => {
     case 'controls': loadLogs(); break;
   }
 }, 15000);
+
+
+// ── Mensagens: WhatsApp / LinkedIn / Instagram ──
+//
+// Drafts only. The send button opens WhatsApp with the text typed in, or
+// opens the profile and copies the text; the person sends it from their own
+// account and marks it sent here.
+
+const CHANNEL_LABEL = {whatsapp: 'WhatsApp', linkedin: 'LinkedIn', instagram: 'Instagram'};
+
+async function loadChannels() {
+  const el = document.getElementById('channels-list');
+  const data = await api('/api/channels');
+  if (!data) { el.innerHTML = offlineState(); return; }
+  if (data.error) { el.innerHTML = '<div class="card">' + escHtml(data.error) + '</div>'; return; }
+  const pending = data.pending || [];
+  navCount('nav-channels', pending.length);
+  window._channelItems = {};
+  [...pending, ...(data.approved || [])].forEach(it => { window._channelItems[it.id] = it; });
+
+  const card = it => {
+    const who = [it.contact_name, it.company_name].filter(Boolean).join(' · ') || it.target;
+    const note = it.note
+      ? '<div class="muted" style="font-size:12px;margin:8px 0 4px">Nota do convite</div>' +
+        '<div class="body" style="white-space:pre-wrap">' + escHtml(it.note) + '</div>' : '';
+    const warn = it.error ? '<div style="color:var(--red);font-size:12px">' + escHtml(it.error) + '</div>' : '';
+    const approve = it.status === 'pending_review'
+      ? '<button class="btn btn-secondary btn-sm" onclick="channelAct(\'' + it.id + '\',\'approve\')">Aprovar</button>' : '';
+    const sendLabel = it.channel === 'whatsapp' ? 'Abrir no WhatsApp' : 'Copiar e abrir perfil';
+    return '<div class="card" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+        '<div><b>' + escHtml(CHANNEL_LABEL[it.channel] || it.channel) + '</b> &middot; ' +
+          escHtml(who) + ' <span class="muted">(' + escHtml(it.language || '') + ')</span></div>' +
+        badge(it.status) + '</div>' + warn + note +
+      (it.note ? '<div class="muted" style="font-size:12px;margin:8px 0 4px">Mensagem</div>' : '') +
+      '<div class="body" style="white-space:pre-wrap;margin-top:8px">' + escHtml(it.body) + '</div>' +
+      '<div class="desk-actions" style="margin-top:12px">' +
+        '<button class="btn btn-primary btn-sm" onclick="channelOpen(\'' + it.id + '\')">' + sendLabel + '</button>' +
+        approve +
+        '<button class="btn btn-secondary btn-sm" onclick="channelAct(\'' + it.id + '\',\'sent\')">Marcar enviada</button>' +
+        (it.channel === 'whatsapp' && !it.opted_in
+          ? '<button class="btn btn-secondary btn-sm" onclick="channelAct(\'' + it.id + '\',\'optin\')">Deu opt-in</button>' : '') +
+        '<button class="btn btn-secondary btn-sm" onclick="channelAct(\'' + it.id + '\',\'reject\')">Descartar</button>' +
+      '</div></div>';
+  };
+
+  const sentRows = (data.sent || []).map(r =>
+    '<tr><td>' + escHtml(CHANNEL_LABEL[r.channel] || r.channel) + '</td><td>' +
+    escHtml(r.company_name || r.contact_name || r.target) + '</td><td class="muted">' +
+    formatDate(r.sent_at) + '</td></tr>').join('');
+
+  el.innerHTML =
+    (pending.length || (data.approved || []).length
+      ? [...pending, ...(data.approved || [])].map(card).join('')
+      : '<div class="card">' + emptyState('&#10003;', 'Nenhuma mensagem esperando',
+          'Quando a Mariana montar uma campanha, as mensagens de WhatsApp, LinkedIn e Instagram aparecem aqui.') + '</div>') +
+    (sentRows ? '<div class="card"><h2>Enviadas</h2><div class="table-card"><table><thead><tr>' +
+      '<th>Canal</th><th>Para</th><th>Quando</th></tr></thead><tbody>' + sentRows +
+      '</tbody></table></div></div>' : '');
+}
+
+async function channelOpen(id) {
+  const it = (window._channelItems || {})[id];
+  if (!it) return;
+  if (it.channel !== 'whatsapp') {
+    const text = it.note ? it.note + '\n\n---\n\n' + it.body : it.body;
+    try { await navigator.clipboard.writeText(text); toastMsg('Texto copiado'); } catch (e) {}
+  }
+  window.open(it.open_url, '_blank', 'noopener');
+}
+
+function toastMsg(msg) {
+  if (typeof toast === 'function') { toast(msg); return; }
+  console.log(msg);
+}
+
+async function channelAct(id, action) {
+  await api('/api/channels/' + encodeURIComponent(id) + '/' + action, {method: 'POST'});
+  loadChannels();
+}

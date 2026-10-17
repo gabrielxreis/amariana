@@ -218,6 +218,8 @@ class Handler:
                     f"Handler: cancelled {cancelled} queued email(s) for "
                     f"{lead_email} (they replied)."
                 )
+            # Same for WhatsApp/LinkedIn/Instagram drafts: they answered.
+            await self.state.cancel_pending_channels_for_prospect(prospect.id)
         except Exception as e:
             logger.debug(f"Handler: outbox cancel failed: {e}")
 

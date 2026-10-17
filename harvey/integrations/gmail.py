@@ -38,7 +38,10 @@ TOKEN_FILE = PROJECT_ROOT / "data" / "gmail_token.json"
 API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-SCOPE = "https://www.googleapis.com/auth/gmail.modify"
+# gmail.settings.basic lets `mariana signature --install-gmail` set your
+# Gmail signature; sending and reading need only gmail.modify.
+SCOPE = ("https://www.googleapis.com/auth/gmail.modify "
+         "https://www.googleapis.com/auth/gmail.settings.basic")
 LOOPBACK_PORT = 8765
 
 TIMEOUT = httpx.Timeout(connect=10.0, read=30.0, write=30.0, pool=10.0)
@@ -144,7 +147,11 @@ class GmailProvider(MailProvider):
         if in_reply_to:
             msg["In-Reply-To"] = in_reply_to
             msg["References"] = in_reply_to
-        msg.set_content(body)
+        from harvey.signature import compose
+        text, html_part = compose(self.config, body)
+        msg.set_content(text)
+        if html_part:
+            msg.add_alternative(html_part, subtype="html")
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         payload: dict = {"raw": raw}
@@ -251,6 +258,26 @@ class GmailProvider(MailProvider):
         return False, "Token refresh or profile fetch failed"
 
 
+    async def install_signature(self, signature_html: str) -> tuple[bool, str]:
+        """Set the Gmail signature of the address Mariana sends from.
+
+        Needs the gmail.settings.basic scope; a token from before that scope
+        was added gets a 403 here, fixed by re-running `mariana gmail auth`.
+        """
+        profile = await self._request("GET", "/profile")
+        address = (profile or {}).get("emailAddress", "")
+        if not address:
+            return False, "Could not read the Gmail profile. Run 'mariana gmail auth'."
+        data = await self._request(
+            "PATCH", f"/settings/sendAs/{address}",
+            json={"signature": signature_html},
+        )
+        if data is None:
+            return False, ("Gmail refused the signature change. Re-run "
+                           "'mariana gmail auth' to grant the settings permission.")
+        return True, f"Signature installed on {address}"
+
+
 def run_auth_flow(client_id: str, client_secret: str) -> bool:
     """One-time OAuth (installed-app loopback). Blocks until the browser
     round-trip completes; stores the refresh token for GmailProvider."""
@@ -291,7 +318,7 @@ def run_auth_flow(client_id: str, client_secret: str) -> bool:
             self.send_header("Content-Type", "text/html")
             self.end_headers()
             self.wfile.write(
-                b"<h2>Harvey is connected to Gmail.</h2>You can close this tab.")
+                "<h2>Mariana est\u00e1 conectada ao Gmail.</h2>Pode fechar esta aba.".encode())
             done.set()
 
         def log_message(self, *args):

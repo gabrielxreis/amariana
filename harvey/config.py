@@ -24,6 +24,27 @@ class ConfigFileNotFoundError(ConfigError, FileNotFoundError):
     backward compatibility with existing callers/tests."""
 
 
+class SignatureConfig(BaseModel):
+    """What goes under every email Mariana sends, and into signature.html.
+
+    Every field is optional; empty ones are simply left out. Built by
+    harvey/signature.py and appended at send time, after the pre-send gate,
+    so its links never count against the cold-email link budget.
+    """
+    enabled: bool = True
+    name: str = ""            # defaults to persona.name
+    title: str = ""           # defaults to persona.role
+    company: str = ""         # defaults to persona.company
+    phone: str = ""
+    whatsapp: str = ""        # digits with country code, e.g. 5521999998888
+    website: str = ""
+    instagram: str = ""
+    portfolio: str = ""       # reel / Vimeo / YouTube showreel
+    extra_lines: list[str] = []
+    accent_color: str = "#111111"
+    photo_url: str = ""       # optional square headshot or logo for the HTML version
+
+
 class PersonaConfig(BaseModel):
     name: str
     company: str
@@ -31,6 +52,10 @@ class PersonaConfig(BaseModel):
     email: str
     linkedin: str
     tone: str
+    # Language for drafts when the prospect's own can't be inferred:
+    # pt-BR for Brazil, en for the US.
+    language: str = "pt-BR"
+    signature: SignatureConfig = SignatureConfig()
 
 
 class OfferConfig(BaseModel):
@@ -99,11 +124,60 @@ class LinkedInChannelConfig(BaseModel):
     enabled: bool = True
     max_daily_connections: int = 20
     max_daily_messages: int = 10
+    # Mariana drafts LinkedIn connection notes + messages for prospects
+    # abroad and you send them from the dashboard. Automating LinkedIn with
+    # your password (the old scraper) breaks its terms and gets accounts
+    # restricted, so it stays off unless you opt in explicitly.
+    automate_login: bool = False
+
+
+class InstagramChannelConfig(BaseModel):
+    """DM drafts for businesses whose Instagram is linked from their site.
+    Always sent by hand from the dashboard."""
+    enabled: bool = True
+
+
+WHATSAPP_MODES = ("link", "cloud_api")
+
+
+class WhatsAppChannelConfig(BaseModel):
+    """WhatsApp drafts for prospects with a phone number.
+
+    mode "link" (default): Mariana writes the message and the dashboard opens
+    your own WhatsApp with it typed in; you press send. No account risk.
+    mode "cloud_api": approved messages go out through Meta's WhatsApp
+    Business Cloud API, and ONLY to contacts marked opted_in (they replied or
+    asked). Meta's policy forbids unsolicited business messages, so cold
+    numbers always stay in link mode regardless of this setting.
+    """
+    enabled: bool = True
+    mode: str = "link"
+    max_daily_sends: int = 20
+    require_approval: bool = True
+    default_country_code: str = "55"
+    # Country calling codes WhatsApp is used for. Everyone else (US and the
+    # rest of the world) is reached by email and LinkedIn instead, where
+    # cold business outreach is the norm. Empty list = every country.
+    countries: list[str] = ["55"]
+    # Cloud API only: an approved template used to open a conversation
+    # with an opted-in contact outside the 24h window.
+    template_name: str = ""
+    template_language: str = "pt_BR"
+
+    @field_validator("mode")
+    @classmethod
+    def _valid_mode(cls, v: str) -> str:
+        v = (v or "link").strip().lower()
+        if v not in WHATSAPP_MODES:
+            raise ValueError(f"whatsapp.mode must be one of {WHATSAPP_MODES}")
+        return v
 
 
 class ChannelsConfig(BaseModel):
     email: EmailChannelConfig = EmailChannelConfig()
     linkedin: LinkedInChannelConfig = LinkedInChannelConfig()
+    whatsapp: WhatsAppChannelConfig = WhatsAppChannelConfig()
+    instagram: InstagramChannelConfig = InstagramChannelConfig()
 
 
 PRECLEARED_ADDRESS_SOURCES = ("published", "bought", "scraped", "given", "unknown")
@@ -295,6 +369,9 @@ class EnvConfig(BaseModel):
     m365_tenant_id: str = ""
     # Optional: only used when compliance.precleared.enabled is true.
     precleared_api_key: str = ""
+    # WhatsApp Business Cloud API (channels.whatsapp.mode: cloud_api)
+    whatsapp_token: str = ""
+    whatsapp_phone_number_id: str = ""
 
 
 def _format_validation_error(e: ValidationError) -> str:
@@ -408,6 +485,8 @@ def load_env() -> EnvConfig:
         m365_client_id=os.getenv("M365_CLIENT_ID", "").strip(),
         m365_tenant_id=os.getenv("M365_TENANT_ID", "").strip(),
         precleared_api_key=os.getenv("PRECLEARED_API_KEY", "").strip(),
+        whatsapp_token=os.getenv("WHATSAPP_TOKEN", "").strip(),
+        whatsapp_phone_number_id=os.getenv("WHATSAPP_PHONE_NUMBER_ID", "").strip(),
     )
     return env
 

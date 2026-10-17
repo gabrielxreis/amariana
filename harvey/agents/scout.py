@@ -141,7 +141,9 @@ class Scout:
         # the mercy of Serper/Bing flakiness — cheapest, most reliable win
         # available before spending any queries.
         strategies.append(("known_companies", self._prospect_via_known_companies))
-        if self.config.channels.linkedin.enabled and self.env.linkedin_email:
+        if (self.config.channels.linkedin.enabled
+                and getattr(self.config.channels.linkedin, "automate_login", False)
+                and self.env.linkedin_email):
             strategies.append(("linkedin", self._prospect_via_linkedin))
         # Job boards first: hiring is the strongest intent signal, and the
         # strategy self-skips when python-jobspy isn't installed.

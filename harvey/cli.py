@@ -660,8 +660,8 @@ def main():
     project_root = str(PROJECT_ROOT)
 
     parser = argparse.ArgumentParser(
-        prog="harvey",
-        description="Harvey — Autonomous AI Sales Agent. Always Be Closing.",
+        prog="mariana",
+        description="Mariana: secretária de IA que fecha trabalhos de audiovisual e edição.",
     )
     subparsers = parser.add_subparsers(dest="command")
 
@@ -793,16 +793,21 @@ def main():
     sub.add_argument("--days", type=int, default=30, help="Breakdown window (default: 30)")
     sub.set_defaults(func=cmd_usage)
 
+    # Mariana: onboarding, signature, email and WhatsApp checks
+    from harvey.mariana_cli import register as register_mariana
+    register_mariana(subparsers)
+
     args = parser.parse_args()
     args._project_root = project_root
 
     if args.command is None:
         parser.print_help()
-        print("\n  Quick start:")
-        print("    harvey install   — Install dependencies")
-        print("    harvey setup     — Configure Harvey (first time)")
-        print("    harvey run       — Start closing deals")
-        print("    harvey dashboard — Open the web dashboard")
+        print("\n  Começo rápido:")
+        print("    mariana onboard    : a Mariana aprende sobre você (primeiro uso)")
+        print("    mariana signature  : gera e instala a assinatura de email")
+        print("    mariana email-check: confere o email de envio")
+        print("    mariana run        : começa a procurar e escrever")
+        print("    mariana dashboard  : painel em http://localhost:5555")
         print()
         sys.exit(0)
 

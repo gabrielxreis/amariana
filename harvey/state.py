@@ -413,6 +413,41 @@ MIGRATIONS: list[str] = [
     -- so one subscription's budget never consumes the other's.
     ALTER TABLE usage_log ADD COLUMN codex_calls INTEGER DEFAULT 0;
     """,
+    # ── v12: manual channels (Mariana): WhatsApp, LinkedIn, Instagram ──
+    """
+    -- One draft per (campaign, prospect, channel): the unique index is the
+    -- double-draft guard, like the email outbox. `target` is a phone (digits,
+    -- E.164 without +) for WhatsApp, or a profile URL for LinkedIn and
+    -- Instagram. `opted_in` marks a contact who replied or asked to be
+    -- contacted; only those may go out through the WhatsApp Cloud API.
+    -- Everything else is sent by hand from the dashboard.
+    CREATE TABLE IF NOT EXISTS channel_outbox (
+        id TEXT PRIMARY KEY,
+        channel TEXT DEFAULT 'whatsapp',
+        campaign_id TEXT DEFAULT '',
+        prospect_id TEXT DEFAULT '',
+        company_id TEXT DEFAULT '',
+        contact_name TEXT DEFAULT '',
+        company_name TEXT DEFAULT '',
+        target TEXT DEFAULT '',
+        language TEXT DEFAULT '',
+        body TEXT DEFAULT '',
+        note TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending_review',
+        opted_in INTEGER DEFAULT 0,
+        mode TEXT DEFAULT 'manual',
+        message_id TEXT DEFAULT '',
+        error TEXT DEFAULT '',
+        sent_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_channel_campaign_prospect
+        ON channel_outbox(campaign_id, prospect_id, channel)
+        WHERE campaign_id != '';
+    CREATE INDEX IF NOT EXISTS idx_channel_status ON channel_outbox(channel, status);
+    """,
 ]
 
 BRAIN_PROVIDERS = ("claude", "codex")
@@ -946,6 +981,128 @@ class StateManager:
                 "AND date(sent_at) = date('now')"
             ) as cursor:
                 return (await cursor.fetchone())[0]
+
+    # ── Channel outbox (Mariana): WhatsApp, LinkedIn, Instagram ──
+
+    _CHANNEL_COLUMNS = frozenset({
+        "status", "body", "note", "error", "message_id", "sent_at",
+        "opted_in", "mode", "target",
+    })
+
+    @staticmethod
+    def _channel_row(row) -> dict:
+        d = dict(row)
+        d["opted_in"] = bool(d.get("opted_in"))
+        return d
+
+    async def add_channel_item(
+        self,
+        *,
+        channel: str,
+        target: str,
+        body: str,
+        note: str = "",
+        prospect_id: str = "",
+        company_id: str = "",
+        campaign_id: str = "",
+        contact_name: str = "",
+        company_name: str = "",
+        language: str = "",
+        status: str = "pending_review",
+        mode: str = "manual",
+        opted_in: bool = False,
+    ) -> str | None:
+        """Queue one draft. None when this (campaign, prospect, channel)
+        already has one."""
+        item_id = _new_id()
+        async with self._connect() as db:
+            cursor = await db.execute(
+                """INSERT OR IGNORE INTO channel_outbox
+                   (id, channel, campaign_id, prospect_id, company_id,
+                    contact_name, company_name, target, language, body, note,
+                    status, opted_in, mode)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (item_id, channel, campaign_id, prospect_id, company_id,
+                 contact_name, company_name, target, language, body, note,
+                 status, int(opted_in), mode),
+            )
+            await db.commit()
+            return item_id if cursor.rowcount > 0 else None
+
+    async def get_channel_items(
+        self, channel: str | None = None, status: str | None = None,
+        limit: int = 200,
+    ) -> list[dict]:
+        where, params = [], []
+        if channel:
+            where.append("channel = ?")
+            params.append(channel)
+        if status:
+            where.append("status = ?")
+            params.append(status)
+        sql = "SELECT * FROM channel_outbox"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY created_at ASC LIMIT ?"
+        params.append(int(limit))
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(sql, params) as cursor:
+                return [self._channel_row(r) for r in await cursor.fetchall()]
+
+    async def get_channel_item(self, item_id: str) -> dict | None:
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT * FROM channel_outbox WHERE id = ?", (item_id,)
+            ) as cursor:
+                row = await cursor.fetchone()
+        return self._channel_row(row) if row else None
+
+    async def update_channel_item(self, item_id: str, **kwargs):
+        fields = {k: (int(v) if isinstance(v, bool) else v)
+                  for k, v in kwargs.items() if k in self._CHANNEL_COLUMNS}
+        if not fields:
+            return
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        async with self._connect() as db:
+            await db.execute(
+                f"UPDATE channel_outbox SET {sets}, updated_at = ? WHERE id = ?",
+                (*fields.values(), _utcnow().isoformat(), item_id),
+            )
+            await db.commit()
+
+    async def channel_drafted(self, channel: str) -> set[str]:
+        """Prospects that already have a draft on this channel, in any state."""
+        async with self._connect() as db:
+            async with db.execute(
+                "SELECT DISTINCT prospect_id FROM channel_outbox "
+                "WHERE prospect_id != '' AND channel = ?", (channel,)
+            ) as cursor:
+                return {r[0] for r in await cursor.fetchall()}
+
+    async def count_channel_sent_today(self, channel: str) -> int:
+        async with self._connect() as db:
+            async with db.execute(
+                "SELECT COUNT(*) FROM channel_outbox WHERE channel = ? "
+                "AND status = 'sent' AND date(sent_at) = date('now')",
+                (channel,),
+            ) as cursor:
+                return (await cursor.fetchone())[0]
+
+    async def cancel_pending_channels_for_prospect(
+        self, prospect_id: str, reason: str = "stop_on_reply"
+    ) -> int:
+        """They answered somewhere: every unsent draft elsewhere is now wrong."""
+        async with self._connect() as db:
+            cursor = await db.execute(
+                "UPDATE channel_outbox SET status = 'cancelled', error = ?, "
+                "updated_at = ? WHERE prospect_id = ? "
+                "AND status IN ('pending_review', 'approved')",
+                (reason, _utcnow().isoformat(), prospect_id),
+            )
+            await db.commit()
+            return cursor.rowcount
 
     async def find_outbox_by_message_id(self, message_id: str) -> dict | None:
         if not message_id:
@@ -1513,6 +1670,22 @@ class StateManager:
                     d["prospect_ids"] = json.loads(d.pop("prospect_ids_json") or "[]")
                     campaigns.append(Campaign(**d))
                 return campaigns
+
+    async def get_campaigns(self) -> list[Campaign]:
+        """Every campaign, newest first."""
+        async with self._connect() as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT * FROM campaigns ORDER BY created_at DESC"
+            ) as cursor:
+                rows = await cursor.fetchall()
+        campaigns = []
+        for r in rows:
+            d = dict(r)
+            d["sequence"] = Campaign.sequence_from_json(d.pop("sequence_json"))
+            d["prospect_ids"] = json.loads(d.pop("prospect_ids_json") or "[]")
+            campaigns.append(Campaign(**d))
+        return campaigns
 
     async def update_campaign(self, campaign_id: str, **kwargs):
         """Update whitelisted campaign columns in a single atomic statement."""

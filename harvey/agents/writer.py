@@ -13,6 +13,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from harvey import market
 from harvey.brain import Brain
 from harvey.config import HarveyConfig
 from harvey.integrations.mail_provider import NATIVE_PROVIDERS
@@ -39,6 +40,7 @@ class Writer:
         self.state = state
         self.config = config
         self.env = env
+        self._markets: dict[str, str] = {}
 
     @property
     def is_native(self) -> bool:
@@ -70,6 +72,16 @@ class Writer:
                 "Writer: No prospects with deliverable (verified/risky) emails yet."
             )
             return
+
+        # Brazil writes in Portuguese, abroad in English (harvey/market.py)
+        default_lang = getattr(self.config.persona, "language", "pt-BR")
+        self._markets = {}
+        for p in prospects_with_email:
+            try:
+                self._markets[p.id] = await market.for_prospect(
+                    self.state, p, default_lang)
+            except Exception:
+                self._markets[p.id] = market.detect(default_language=default_lang)
 
         # Batch prospects into campaign groups (by industry/title for relevance)
         batches = self._group_prospects(prospects_with_email)
@@ -221,6 +233,7 @@ or anything else:
 {chr(10).join(facts)}
 
 Requirements:
+- Write it in {self._language_for([prospect])}.
 - Under 75 words. One specific observation from the FACTS above, one
   question. No pitch, no product name.
 - Write the actual text (no merge variables — you know their name/company).
@@ -281,6 +294,7 @@ Write a 3-email cold outreach sequence for prospects like these:
 {prospect_summary}
 
 Requirements:
+- Write every email in {self._language_for(prospects)}.
 - Email 1: Personalized cold observation + one question. Under 75 words. No pitch.
 - Email 2: Follow-up 3 days later. Different angle, one concrete proof point. Under 75 words.
 - Email 3: Break-up email 4 days after that. Under 40 words. Gracious, not guilt-tripping.
@@ -354,14 +368,26 @@ Return ONLY a JSON array (no markdown fences, no commentary):
             logger.warning(f"Writer: Expected 3 emails, got {len(steps)}.")
         return steps
 
+    def _language_for(self, prospects: list) -> str:
+        markets = getattr(self, "_markets", {}) or {}
+        mk = next((markets[p.id] for p in prospects if p.id in markets), "")
+        if not mk:
+            mk = market.detect(default_language=getattr(
+                self.config.persona, "language", "pt-BR"))
+        return market.language_name(mk)
+
     def _group_prospects(self, prospects: list) -> dict[str, list]:
-        """Group prospects into campaign batches by industry/title combo."""
+        """Group prospects into campaign batches by market + industry.
+
+        Market first (Brazil vs abroad) so a batch never mixes languages: a
+        sequence is written once per batch, in that market's language.
+        """
         batches: dict[str, list] = {}
 
         for prospect in prospects:
-            # Group by industry + rough title category
             industry = prospect.industry or "general"
-            key = f"{industry}-outreach"
+            mk = self._markets.get(prospect.id, "")
+            key = f"{mk.lower()}-{industry}-outreach" if mk else f"{industry}-outreach"
 
             if key not in batches:
                 batches[key] = []

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "harvey"
 version = "0.3.0"
-description = "Autonomous AI sales agent. Always Be Closing."
+description = "Mariana: AI booking assistant that closes filming and editing jobs. Fork of Harvey."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -46,6 +46,7 @@ Issues = "https://github.com/ethanplusai/harvey/issues"
 Changelog = "https://github.com/ethanplusai/harvey/blob/main/CHANGELOG.md"
 
 [project.scripts]
+mariana = "harvey.cli:main"
 harvey = "harvey.cli:main"
 
 [tool.setuptools.packages.find]

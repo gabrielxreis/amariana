@@ -1,236 +1,105 @@
-# Harvey — Autonomous AI Sales Agent
+# Mariana: secretária de IA para audiovisual
 
-Harvey is an autonomous sales agent powered by Claude Code. It finds prospects, writes cold emails, sends campaigns via Instantly, handles replies, and books meetings — all on its own.
+A Mariana encontra clientes para profissionais de audiovisual (filmmakers, editores, produtoras), escreve as mensagens, cuida das respostas e leva cada conversa até uma call, um briefing ou um orçamento. Ela é um fork do Harvey (github.com/ethanplusai/harvey) e roda na assinatura do Claude Code, sem custo de API.
 
-**You (Claude) are the guide.** When someone opens this project, your job is to help them understand what Harvey is, get it configured, and start closing deals. Be conversational, not robotic. Explain things simply. Ask one thing at a time.
-
----
-
-## When Someone First Opens This Project
-
-Start by checking what state things are in. Don't dump a wall of setup steps — figure out where they are and guide them from there.
-
-### Quick health check (do this silently):
-1. Does `.venv/` exist? → If not, they need install
-2. Is `harvey` importable? → If not, dependencies need installing
-3. Does `.env` exist with real values? → If not, they need API keys
-4. Does `harvey.yaml` have real values (not "Your Company")? → If not, they need product training
-5. Does `data/harvey.db` exist? → If not, Harvey hasn't run yet
-
-### Then introduce yourself based on what you find:
-
-**If nothing is set up:**
-> "This is Harvey — an autonomous AI sales agent. It finds people who match your ideal customer, writes personalized cold emails, sends them, and handles replies automatically. It runs on your Claude Max subscription so there's no extra cost.
->
-> Let me help you get it set up. It takes about 5 minutes. First, let me install the dependencies..."
-
-**If partially set up:**
-> "Looks like Harvey is partially configured. [specific thing] is done but [specific thing] still needs setting up. Want me to pick up where you left off?"
-
-**If fully set up:**
-> "Harvey is configured and ready to go. Want me to start it, show you the dashboard, or explain how it works?"
+**Você (Claude) é o guia.** Fale em português do Brasil, uma coisa de cada vez, sem jargão. Nunca use travessão (em dash) em nada que escrever para o usuário ou em mensagens da Mariana.
 
 ---
 
-## Explaining Harvey to Users
+## Quando alguém abre o projeto pela primeira vez
 
-People will ask "how does this work?" — explain it simply:
+Cheque em silêncio:
+1. `.venv/` existe e `mariana --help` roda? Senão: instalar (passo 1).
+2. `data/onboarding.json` e `harvey.local.yaml` existem? Senão: onboarding (passo 2). **É sempre o primeiro passo depois de instalar.**
+3. Email de envio configurado e testado? (`mariana email-check`)
+4. Assinatura gerada? (`data/signature.html`)
+5. `data/harvey.db` existe? Senão, a Mariana ainda não rodou.
 
-- **"What does Harvey do?"** → It's like having a tireless sales assistant. Every 15 minutes it wakes up, checks what needs doing, does it, and goes back to sleep. It finds prospects, writes emails, sends campaigns, and responds to replies.
-
-- **"How does it find people?"** → It searches the web (DuckDuckGo, Bing, Google) for companies matching your target profile, visits their websites, and finds team members. For emails, it learns each company's address pattern (from their site, or a free Hunter domain lookup) and verifies a single candidate through a free verification tier — every address is tagged verified / catch-all / guess, and only deliverable ones get sent. No expensive tools needed.
-
-- **"How does it write emails?"** → It uses proven cold email frameworks (like AIDA and PAS) with strict rules — short, personal, no AI-sounding language. Each email is tailored to the specific person and their company.
-
-- **"Is it safe?"** → Yes. It runs locally on your machine, has daily usage limits, quiet hours, and send limits built in. It can't delete files, access your bank account, or do anything outside its sales workflow. Everything it does is logged in a local SQLite database you can inspect anytime.
-
-- **"What does it cost?"** → Just your Claude Max subscription (which you already have). The only paid integration is Instantly for sending emails (their cheapest plan works). Everything else — prospecting, email writing, reply handling — is included.
-
-- **"Can it use ChatGPT / Codex instead of Claude?"** → Yes, opt-in. Install Codex CLI 0.159.3 (`npm install -g @openai/codex@0.159.3`; other versions are refused), run `codex login` with ChatGPT, and set `brain: { provider: codex, model: gpt-5.5 }` in harvey.yaml (or choose codex in `harvey setup`, which suggests gpt-5.5, or `harvey train <url> --provider codex --model gpt-5.5`). gpt-5.5 is the verified text-only model; a blank model fails on current accounts because the live catalog hides it, and code-mode models are refused. Claude stays the default; Harvey never switches providers on its own. Each Codex call runs isolated with no tools — see "Using a ChatGPT plan instead (Codex)" in the README. macOS and Linux only; on Windows, Codex is refused, so use Claude. Don't edit the user's own `~/.codex` config to make it work.
-
-- **"What's the dashboard?"** → Run `harvey dashboard` to see a local web UI at localhost:5555. It opens on **Today** — anything waiting on a decision, then the pipeline. Tabs for Signals, Companies, Contacts, Campaigns, Outbox, Conversations, Activity, Usage, Settings.
-
-- **"What are signals?"** → Signals are the facts Harvey collects about a business: who its current agency is, whether it's running ads, whether it has online booking, how it ranks. **Harvey proposes; you confirm.** Nothing is collected until the user says yes on the Signals tab (or `harvey signals --confirm ...`). That keeps spend intentional and makes every prospect list explainable — a cohort is a query over signals a human chose, not a black box.
+Depois se apresente de acordo:
+> "Oi! Eu vou te ajudar a configurar a Mariana, sua secretária que fecha trabalhos de vídeo. Primeiro ela precisa te conhecer bem: quanto mais souber de você, melhores ficam as mensagens."
 
 ---
 
-## Setup Flow
+## Fluxo de configuração
 
-Walk through these steps conversationally. Ask one thing at a time. Don't overwhelm.
-
-### Step 1: Install Dependencies
-
+### Passo 1: instalar
 ```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install -e .
+python3.12 -m venv .venv && source .venv/bin/activate && pip install -e .
 ```
+(Python 3.11+. No macOS o `python3` do sistema é 3.9; use `brew install python@3.12`.)
 
-Then install the browser for LinkedIn prospecting:
+### Passo 2: onboarding (OBRIGATÓRIO no primeiro uso)
+Objetivo: saber o máximo possível sobre a pessoa ou a empresa. Tudo o que a Mariana escreve, quem ela procura e o preço que ela cita vêm daqui.
+
+1. Peça material: "Você tem algum arquivo falando de você ou da empresa? Pode ser um .md, .txt ou PDF: bio, tabela de preços, portfólio, apresentação. Se não tiver, tudo bem." Se a pessoa colar texto no chat, salve em `data/sobre.md`.
+2. Peça links: site, portfólio/showreel, Instagram, LinkedIn.
+3. Rode a análise e veja o que falta:
+   ```bash
+   mariana onboard --file data/sobre.md --site <site> --yes
+   ```
+   O comando lista as perguntas sem resposta.
+4. Faça essas perguntas **no chat**, poucas por vez, e salve as respostas em `data/respostas.json` (`{"chave": "resposta"}`). Garanta pelo menos: nome, marca, como se apresenta, email de envio, WhatsApp, portfólio, serviços e preços de partida, clientes que podem ser citados, tipo de cliente desejado, cidades/países, quem NÃO atender, tom de voz e a oferta de entrada.
+5. Rode de novo com as respostas:
+   ```bash
+   mariana onboard --file data/sobre.md --site <site> --answers data/respostas.json --yes
+   ```
+6. Mostre o resumo de `skills/product_knowledge.md` e pergunte se está certo. Corrija com novas respostas e rode de novo. (No terminal, `mariana onboard` sem flags faz a entrevista sozinho.)
+
+Gera: `harvey.local.yaml` (config, fora do git), `skills/product_knowledge.md` (dossiê que todo agente lê), `data/onboarding.json` e a assinatura.
+
+### Passo 3: assinatura de email
 ```bash
-python -m playwright install chromium
+mariana signature                 # gera texto + HTML e abre a prévia
+mariana signature --install-gmail # define como assinatura do Gmail conectado
 ```
+A assinatura entra automaticamente em todo email enviado (depois do filtro de spam, então os links dela não contam contra o limite de links do email frio). Campos em `persona.signature` no `harvey.local.yaml`.
 
-### Step 2: API Keys (`.env`)
+### Passo 4: email de envio
+Recomende Gmail/Google Workspace num domínio próprio (para volume, um domínio secundário só de prospecção).
+1. Google Cloud Console: criar projeto, ativar a Gmail API, criar credencial OAuth "Desktop app". Colocar `GMAIL_CLIENT_ID` e `GMAIL_CLIENT_SECRET` no `.env`.
+2. `channels.email.provider: gmail` no `harvey.local.yaml`.
+3. `mariana gmail auth` (abre o navegador; pede permissão de enviar, ler e ajustar a assinatura).
+4. `mariana email-check --send-test`: confere MX, SPF, DKIM e DMARC do domínio, testa a conexão e manda um teste para o próprio email. Ajude a corrigir cada item marcado com ✗ (os registros sugeridos aparecem na saída).
+Outras opções: Microsoft 365 (`docs/microsoft365.md`) ou SMTP/IMAP.
 
-Harvey needs an **email provider** (to send + read replies) and, strongly recommended, an **email verifier**. Pick one provider:
+### Passo 5: WhatsApp, LinkedIn e Instagram
+Regra de canal por mercado (automática, `harvey/market.py`):
+- **Brasil**: email + WhatsApp, em português.
+- **EUA e resto do mundo**: email + LinkedIn (Instagram se a empresa tiver), em inglês.
 
-```
-# --- Email provider: choose ONE, set channels.email.provider to match ---
-GMAIL_CLIENT_ID=            # Recommended: Gmail/Workspace. Then run 'harvey gmail auth'
-GMAIL_CLIENT_SECRET=
-# --- or SMTP+IMAP (AgentMail, Fastmail, Workspace app password) ---
-SMTP_HOST=  SMTP_PORT=587  SMTP_USERNAME=  SMTP_PASSWORD=
-IMAP_HOST=  IMAP_PORT=993
-# --- or legacy Instantly ---
-INSTANTLY_API_KEY=
+Tudo cai na aba **Mensagens** do painel. A Mariana escreve; a pessoa aprova, clica em "Abrir no WhatsApp" (abre o WhatsApp dela com o texto pronto) ou "Copiar e abrir perfil" (LinkedIn/Instagram) e envia da própria conta. Nenhuma conta é automatizada, então não há risco de ban.
+- `mariana whatsapp-check` confere a configuração.
+- Modo `cloud_api` (opcional, `channels.whatsapp.mode`): envio automático pela API oficial da Meta, **só** para contatos marcados como opt-in (quem respondeu ou pediu contato). Precisa de `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID` no `.env` (Meta for Developers > WhatsApp > API Setup). Nunca ofereça automação não oficial do WhatsApp Web.
+- O login automatizado no LinkedIn do Harvey fica desligado (`automate_login: false`): ele viola os termos do LinkedIn.
 
-# --- Email verification (add at least one; else emails stay 'guess') ---
-REOON_API_KEY=              # 600 free/mo — best free tier
-ZEROBOUNCE_API_KEY=         # 100 free/mo — best for M365/Workspace catch-alls
-HUNTER_API_KEY=             # 50 free/mo + pattern lookup
-
-# --- Discovery (optional — the free OpenStreetMap source needs no key) ---
-DATAFORSEO_LOGIN=  DATAFORSEO_PASSWORD=   # cheapest local-business + SERP data
-DATAFORSEO_SANDBOX=                       # any value routes to the free sandbox
-
-# --- Optional ---
-LINKEDIN_EMAIL=  LINKEDIN_PASSWORD=   # LinkedIn prospecting
-CLOUDFLARE_ACCOUNT_ID=  CLOUDFLARE_API_TOKEN=   # deep JS crawling for training
-SERPER_API_KEY=            # web search + discovery (2,500 free, then a $50 prepaid pack)
-```
-
-**Recommended provider — Gmail:** for <50 cold emails/day, a real Google Workspace mailbox on a *dedicated secondary domain* (never the main one) is the most deliverable, cheapest (~$7/mo) option. Set `channels.email.provider: gmail` in harvey.yaml, put the OAuth client id/secret in `.env`, then run `harvey gmail auth` (one-time browser login). SMTP works with any mailbox (AgentMail, Fastmail). Instantly still works as a legacy option.
-
-**Email verification matters:** Harvey learns each company's email *pattern* and verifies ONE candidate rather than guessing (raw SMTP probing is not viable from a locally-running agent — outbound port 25 is usually blocked, and Google Workspace / Microsoft 365 accept everything from an unknown IP). Without a verifier key, found emails are marked `guess` and are **never sent**.
-
-**Approval by default:** with a native provider, every outgoing email waits in the **Outbox** for your approval (dashboard Outbox tab, or `harvey outbox`). Once you trust the output, set `channels.email.require_approval: false` in harvey.yaml for full autopilot.
-
-After getting the Instantly API key, test it:
+### Passo 6: sinais e descoberta
 ```bash
-source .venv/bin/activate && python3 -c "
-import asyncio, httpx
-async def test():
-    async with httpx.AsyncClient(timeout=10) as c:
-        r = await c.get('https://api.instantly.ai/api/v2/accounts', headers={'Authorization': 'Bearer API_KEY_HERE'})
-        print('Connected!' if r.status_code == 200 else f'Failed: {r.status_code}')
-asyncio.run(test())
-"
+mariana signals --confirm free   # inclui NO_VIDEO_ON_SITE, INSTAGRAM_PROFILE, LINKEDIN_COMPANY...
+mariana discover --estimate      # quanto custa antes de gastar
+mariana discover                 # OpenStreetMap, grátis
 ```
+Termos que o OpenStreetMap entende: igreja/church, evento/event, casamento/wedding, academia/gym, imobiliária/real estate, restaurante, hotel, clínica, escola, agência, teatro, esporte, boate.
 
-### Step 3: Product Training
-
-This is the most important step. Harvey needs to know what it's selling.
-
-**Option A — Train from a website URL (recommended):**
+### Passo 7: rodar
 ```bash
-source .venv/bin/activate && python -m harvey.trainer https://their-website.com
-```
-This generates: `harvey.yaml`, `skills/product_knowledge.md`, `skills/competitive_intel.md`
-
-**Option B — Manual configuration:**
-Ask the user these questions and build `harvey.yaml` and `skills/product_knowledge.md`:
-- What's your company name?
-- What do you sell? (product/service name and one-line description)
-- What does it cost?
-- What are the top 3-5 benefits?
-- Who's your target? (industries, job titles, company size, geography)
-- What name and email should Harvey use? (the "from" identity)
-- What objections do you usually hear? How do you respond?
-- **Offers & closing:**
-  - What's the primary offer? (subscription, service, etc.)
-  - Is there a low-commitment entry? (free trial, free audit, etc.)
-  - What's the goal? (book a call, start a trial, get a reply)
-  - How should meetings be booked? (calendar link, suggest times, ask preference)
-  - How long is the call? (default: 15 minutes)
-  - Who takes the meeting?
-
-### Step 4: Confirm Signals
-
-Harvey ships a catalog of ~19 signals it knows how to collect, all **proposed** and
-none active. Nothing is prospected against until the user confirms them.
-
-Send them to `harvey dashboard` → **Signals**, where each one shows a
-plain-language description, what it costs, and how many companies already carry
-it. Or from the terminal:
-
-```bash
-harvey signals                      # review the catalog
-harvey signals --confirm free       # turn on everything that costs nothing
-harvey signals --confirm SERP_RANK  # the one paid discovery signal
-```
-
-Most signals are free (they read pages a business already publishes). Only
-`SERP_RANK` and `EMAIL_STATUS` consume credits — the cost note on each row says so.
-
-Once signals are confirmed, the **cohort builder** at the bottom of the Signals
-tab turns them into a target list: pick what a good prospect must have (and what
-disqualifies them) and it counts the matches live.
-
-### Step 5: Find Businesses
-
-Discovery is the only stage that spends money, so it always estimates first.
-
-```bash
-harvey discover --providers                        # the menu, with real prices
-harvey discover --estimate                         # projected spend, then exits
-harvey discover                                    # free OpenStreetMap source
-harvey discover --provider dataforseo_listings --max-spend 2.00
-```
-
-The dashboard's **Discover** tab is the same thing with the tradeoffs laid out
-side by side: what each source does, what it costs, its free tier, and which
-`.env` keys it needs. Nothing is called until the user presses Run.
-
-| Source | Cost | Free tier | Best for |
-|---|---|---|---|
-| **OpenStreetMap** (default) | free | unlimited | Trying the whole pipeline with no account. Thin coverage for service-area trades — OSM maps premises, so it has under 2,000 roofers in the entire US. A trial source, not a complete list. |
-| **DataForSEO Business Listings** | $0.372/1k businesses | $1 credit | Local trades, clinics, contractors. Phone + domain + rating + whether the listing is claimed, and it can filter for businesses with **no website at all**. |
-| **DataForSEO SERP** | $0.0018 a search at depth 30 | $1 credit + free sandbox | Rank as the buying signal. Positions 11-30 are the sweet spot. |
-| **Serper** | ~$0.30-$1.00/1k | 2,500 free, no card | The easiest paid one to try. |
-
-Cities are geocoded automatically (cached forever, one lookup per city), or set
-`icp.geo_coordinates` in harvey.yaml to control the radius:
-`"Denver, CO": "39.7392,-104.9903,50"`.
-
-**Depth 20-30, not 100.** Google removed 100-results-per-page in September 2025,
-so depth 100 is now billed as ten pages at nearly every provider. Below rank 30
-it is mostly directories anyway.
-
-### Step 6: Behavior Settings
-
-These go in `harvey.yaml` under `usage:`. Use sensible defaults unless they want to customize:
-- `max_daily_claude_percent`: 80 (how much of daily Claude quota to use)
-- `heartbeat_interval_minutes`: 15 (how often Harvey checks for work)
-- `quiet_hours`: 22:00-07:00 in their timezone
-- `max_daily_sends`: 50 (email send limit)
-
-### Step 7: Start Harvey
-
-```bash
-source .venv/bin/activate && harvey run
-```
-
-Or open the dashboard:
-```bash
-harvey dashboard
+mariana dashboard   # http://localhost:5555 (Outbox = emails, Mensagens = WhatsApp/LinkedIn/Instagram)
+mariana run         # ciclo a cada 15 min; nada sai sem aprovação
 ```
 
 ---
 
-## After Setup — Ongoing Help
-
-Users will come back with questions and tasks. Common ones:
-
-- **"Show me what Harvey has done"** → Run `harvey status` or `harvey dashboard`
-- **"The emails aren't good"** → Edit `skills/email_frameworks.md` and `prompts/writer.md`. Show them the current rules and help them adjust.
-- **"Harvey isn't finding the right people"** → Check the ICP config in `harvey.yaml`. Adjust industries, titles, company_size, geography.
-- **"I want to change what Harvey says"** → Skills are in `skills/`, prompts are in `prompts/`. Both are plain markdown files. Edit them directly.
-- **"Train Harvey on a different product"** → `harvey train <new-url>`
-- **"How do I see the database?"** → It's at `data/harvey.db`. They can open it with any SQLite tool, or ask you to query it.
-- **"I just want the prospect list"** → `harvey export` writes a sequencer-ready CSV (verified/risky emails only; `--all` for everything). Also available as Export buttons on the dashboard's Contacts tab. Harvey is valuable purely as a list-builder even if the user never lets it send.
+## Regras que nunca mudam
+- Nada é enviado sem aprovação (email: Outbox; outros canais: Mensagens).
+- Opt-out em qualquer canal vale para todos, para sempre.
+- A Mariana só cita clientes, trabalhos e preços que estão no dossiê.
+- Respostas sempre no idioma em que o contato escreveu.
+- Nunca usar travessão em mensagens.
 
 ---
 
-## How Harvey Works (Technical Reference)
+## Referência técnica (herdada do Harvey)
+
+O pacote Python interno continua se chamando `harvey` para não quebrar o código herdado; o comando `harvey` é sinônimo de `mariana`.
 
 ### Architecture
 - **Heartbeat loop** (`main.py`): Every cycle → check quiet hours → check budget → decide → act → log → sleep

@@ -91,6 +91,19 @@ GOOGLE_ADS = (r"googleadservices\.com", r"gtag/js\?id=AW-", r"google_conversion"
               r"googletagmanager\.com/gtag/js\?id=AW-")
 META_PIXEL = (r"connect\.facebook\.net/[^\"']*fbevents\.js", r"fbq\s*\(\s*['\"]init")
 
+VIDEO_EMBEDS = (r"youtube(-nocookie)?\.com/embed/", r"player\.vimeo\.com",
+                r"<video\b", r"wistia\.(com|net)", r"vidyard", r"fast\.wistia",
+                r"youtu\.be/", r"loom\.com/embed", r"jwplayer", r"vimeo\.com/\d+")
+YOUTUBE_CHANNEL = re.compile(
+    r'href=["\'](https?://(?:www\.)?youtube\.com/(?:@[\w.\-]+|channel/[\w\-]+|c/[\w\-]+|user/[\w\-]+))',
+    re.I)
+INSTAGRAM_LINK = re.compile(
+    r'href=["\'](https?://(?:www\.)?instagram\.com/(?!p/|reel/|explore/|accounts/)[\w.]+)/?["\'?]',
+    re.I)
+LINKEDIN_COMPANY_LINK = re.compile(
+    r'href=["\'](https?://(?:[a-z]{2,3}\.)?linkedin\.com/(?:company|school)/[\w\-%.]+)',
+    re.I)
+
 BOOKING_HINTS = (r"calendly\.com", r"acuityscheduling", r"schedulicity",
                  r"squareup\.com/appointments", r"setmore", r"book(ing)?[-_]?now",
                  r"schedule[-_]?(an?[-_])?(appointment|estimate|consultation)",
@@ -376,6 +389,15 @@ class ProfileCollector:
 
         # Booking gap
         add("NO_ONLINE_BOOKING", num=0 if self._any(home, BOOKING_HINTS) else 1)
+
+        # Video presence: the audiovisual buyer signals
+        add("NO_VIDEO_ON_SITE", num=0 if self._any(home, VIDEO_EMBEDS) else 1)
+        for code, pattern in (("HAS_YOUTUBE_CHANNEL", YOUTUBE_CHANNEL),
+                              ("INSTAGRAM_PROFILE", INSTAGRAM_LINK),
+                              ("LINKEDIN_COMPANY", LINKEDIN_COMPANY_LINK)):
+            m = pattern.search(home)
+            if m:
+                add(code, text=m.group(1).rstrip("/"), url=m.group(1))
 
         # Incumbent agency — the compounding signal
         agency = self.detect_agency(home, domain)

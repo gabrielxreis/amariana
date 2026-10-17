@@ -8,7 +8,7 @@ import signal
 import subprocess
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import aiosqlite
@@ -743,6 +743,61 @@ async def outbox_reject(item_id: str):
         state = _state()
         await state.init_db()
         await state.update_outbox_item(item_id, status="rejected")
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+@app.get("/api/channels")
+async def get_channels_api():
+    """WhatsApp / LinkedIn / Instagram drafts for the Mensagens tab."""
+    try:
+        from harvey.agents.channels import open_url
+        state = _state()
+        await state.init_db()
+
+        def with_url(items):
+            for it in items:
+                it["open_url"] = open_url(it)
+            return items
+
+        return {
+            "pending": with_url(await state.get_channel_items(status="pending_review", limit=100)),
+            "approved": with_url(await state.get_channel_items(status="approved", limit=100)),
+            "sent": await query_db(
+                "SELECT * FROM channel_outbox WHERE status = 'sent' "
+                "ORDER BY sent_at DESC LIMIT 30"),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/api/channels/{item_id}/{action}")
+async def channel_action(item_id: str, action: str):
+    if action not in ("approve", "reject", "sent", "optin"):
+        return JSONResponse({"success": False, "message": "unknown action"}, status_code=400)
+    try:
+        state = _state()
+        await state.init_db()
+        item = await state.get_channel_item(item_id)
+        if not item:
+            return JSONResponse({"success": False, "message": "not found"}, status_code=404)
+        if action == "approve":
+            await state.update_channel_item(item_id, status="approved")
+        elif action == "reject":
+            await state.update_channel_item(item_id, status="rejected")
+        elif action == "optin":
+            await state.update_channel_item(item_id, opted_in=True)
+        else:
+            now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+            await state.update_channel_item(item_id, status="sent", sent_at=now)
+            prospect = await state.get_prospect(item["prospect_id"]) if item["prospect_id"] else None
+            if prospect and prospect.status in ("new", "queued"):
+                await state.update_prospect_status(prospect.id, "contacted")
+            await state.log_action(
+                action_type=f"{item['channel']}_sent", agent="you",
+                details={"to": item["target"], "company": item["company_name"]},
+            )
         return {"success": True}
     except Exception as e:
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)

@@ -226,7 +226,7 @@ class MicrosoftProvider(MailProvider):
         the prospect's message, which sets In-Reply-To/References."""
         content = {
             "subject": subject,
-            "body": {"contentType": "Text", "content": body},
+            "body": _signed_body(self.config, body),
             "toRecipients": [{"emailAddress": {"address": to_email}}],
         }
         draft = None
@@ -511,3 +511,12 @@ def run_auth_flow(client_id: str, tenant: str = "") -> bool:
     })
     print(f"  ✓ Microsoft 365 authorized. Token stored at {TOKEN_FILE}")
     return True
+
+
+def _signed_body(config, body: str) -> dict:
+    """Graph message body: HTML with the signature when one is configured."""
+    from harvey.signature import compose
+    text, html_part = compose(config, body)
+    if html_part:
+        return {"contentType": "HTML", "content": html_part}
+    return {"contentType": "Text", "content": text}

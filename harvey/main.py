@@ -161,7 +161,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
         stop_event = asyncio.Event()
 
     logger.info("=" * 60)
-    logger.info("Harvey is online. Always Be Closing.")
+    logger.info("Mariana está online. Bora fechar job.")
     logger.info("=" * 60)
 
     try:
@@ -189,12 +189,14 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
     from harvey.agents.sender import Sender
     from harvey.agents.handler import Handler
     from harvey.agents.analyst import Analyst
+    from harvey.agents.channels import ChannelsAgent
 
     scout = Scout(brain, state, config, env)
     writer = Writer(brain, state, config, env)
     sender = Sender(brain, state, config, env)
     handler = Handler(brain, state, config, env)
     analyst = Analyst(state)
+    channels = ChannelsAgent(brain, state, config, env)
 
     interval = config.usage.heartbeat_interval_minutes * 60
     max_calls = max(int(200 * (config.usage.max_daily_claude_percent / 100)), 1)
@@ -291,6 +293,11 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             if sender.is_native and not any(n == "handle_replies" for n, _ in tasks):
                 tasks.append(("read_replies", handler.run()))
 
+            # WhatsApp / LinkedIn / Instagram drafts for prospects already in
+            # a campaign. Bounded per cycle; nothing goes out without approval.
+            if action in ("write_campaign", "send_campaign", "idle", "prospect"):
+                tasks.append(("channels", channels.run()))
+
             # Profiling rides along every cycle. It is three HTTP requests per
             # business with no model call, so it costs nothing against the
             # Claude budget the rest of this loop is rationing — and it is what
@@ -349,7 +356,7 @@ async def heartbeat(stop_event: asyncio.Event | None = None):
             if await _interruptible_sleep(backoff, stop_event):
                 break
 
-    logger.info("Harvey shutting down. Deals don't close themselves, but I need a break.")
+    logger.info("Mariana encerrando. Até a próxima.")
 
 
 def _needs_setup() -> bool:

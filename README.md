@@ -1,3 +1,30 @@
+# Mariana
+
+**Secretária de IA que fecha trabalhos de audiovisual e edição.** Fork do [Harvey](https://github.com/ethanplusai/harvey), adaptado para filmmakers, editores e produtoras.
+
+- **Onboarding no primeiro uso:** você manda um `.md` sobre você ou a empresa, o site e o portfólio; ela pergunta o que faltar e monta o dossiê que guia tudo.
+- **Encontra quem compra vídeo:** igrejas, eventos, casamentos, marcas, agências, academias, imobiliárias, times. Sinais novos: site sem vídeo, canal do YouTube, Instagram e LinkedIn da empresa.
+- **Canal certo por mercado:** Brasil = email + WhatsApp (português); EUA e exterior = email + LinkedIn (inglês). Instagram quando a empresa tem.
+- **Assinatura de email** gerada e aplicada em todo envio (texto + HTML), com instalação direta no Gmail.
+- **Ambiente de email pronto:** `mariana email-check` confere MX, SPF, DKIM e DMARC, testa a conexão e envia um teste.
+- **WhatsApp sem risco de ban:** você aprova e envia do seu próprio WhatsApp com um clique; a API oficial da Meta só para quem deu opt-in.
+- **Nada sai sem a sua aprovação.**
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate && pip install -e .
+mariana onboard        # primeiro uso
+mariana signature      # assinatura
+mariana email-check --send-test
+mariana dashboard      # http://localhost:5555
+mariana run
+```
+
+Ou abra a pasta no Claude Code e diga "configurar a Mariana": o `CLAUDE.md` guia tudo.
+
+---
+
+*Documentação original do Harvey abaixo (o pacote interno ainda se chama `harvey`; o comando `harvey` é sinônimo de `mariana`).*
+
 # Harvey
 
 **An autonomous sales agent that runs on your Claude Code or Codex subscription.**

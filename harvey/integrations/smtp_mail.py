@@ -68,7 +68,11 @@ class SmtpImapProvider(MailProvider):
         if in_reply_to:
             msg["In-Reply-To"] = in_reply_to
             msg["References"] = in_reply_to
-        msg.set_content(body)
+        from harvey.signature import compose
+        text, html_part = compose(self.config, body)
+        msg.set_content(text)
+        if html_part:
+            msg.add_alternative(html_part, subtype="html")
 
         try:
             await aiosmtplib.send(
