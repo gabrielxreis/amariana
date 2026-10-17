@@ -1490,6 +1490,10 @@ async function convoProposal(id) {
   if (data && data.success) {
     window.open('/api/proposals/' + encodeURIComponent(data.file), '_blank', 'noopener');
     showToast('Proposta pronta (aba Jobs).', 'success');
+    if ((data.suggested_prices || []).length) {
+      alert('Preço sugerido pelo seu histórico (confira antes de enviar): ' +
+        data.suggested_prices.join(', ') + '\n\n' + (data.price_hints || []).join('\n'));
+    }
   } else {
     alert('Não consegui: ' + ((data && data.message) || 'erro'));
   }
@@ -1503,7 +1507,7 @@ async function convoWon(id) {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({value: value || '', next_event_date: next || ''}),
   });
-  showToast('Job registrado.', 'success');
+  showToast('Job registrado. Montando a pasta do cliente para o Gab...', 'success');
   loadConversations();
 }
 
@@ -1532,11 +1536,57 @@ async function loadJobs() {
       escHtml(j.contact_name || '') + '</span></td><td>' + escHtml(j.service || '') + '</td><td>' +
       escHtml(j.value || '') + '</td><td>' + escHtml(JOB_LABEL[j.status] || j.status) + '</td><td>' +
       escHtml(j.next_event_date || '') + '</td><td>' + prop + '</td><td>' +
-      (j.status === 'proposal' ? btn('won', 'Fechou') + btn('lost', 'Perdeu') : '') +
-      (j.status === 'won' ? btn('delivered', 'Entreguei') : '') +
-      btn('update', 'Próx. evento') + '</td></tr>';
+      (j.status === 'proposal' ? (j.proposal_sent_at ? '<span class="muted">enviada ' + escHtml(j.proposal_sent_at) +
+          (j.followups ? ' · ' + j.followups + ' lembrete(s)' : '') + '</span><br>' : btn('proposal_sent', 'Enviei a proposta')) +
+          btn('won', 'Fechou') + btn('lost', 'Perdeu') : '') +
+      (j.status === 'won' ? btn('revision', 'Revisão ' + (j.revisions_used || 0) + '/' + (j.revisions_included || 2)) +
+          btn('delivered', 'Entreguei') : '') +
+      btn('update', 'Próx. evento') +
+      '<button class="btn btn-secondary btn-sm" onclick="jobEdit(\'' + j.id + '\')">Produção</button>' +
+      '</td></tr>' +
+      '<tr id="jobedit-' + j.id + '" style="display:none"><td colspan="7">' + jobEditor(j) + '</td></tr>' +
+      ((j.project_dir || j.notes || j.shoot_date) ? '<tr><td colspan="7" class="muted" style="font-size:12px">' +
+        [j.shoot_date ? 'Gravação ' + escHtml(j.shoot_date + ' ' + (j.shoot_time || '')) : '',
+         j.address ? escHtml(j.address) : '',
+         j.delivery_due ? 'Entrega ' + escHtml(j.delivery_due) : '',
+         j.project_dir ? 'Pasta: ' + escHtml(j.project_dir) : '',
+         j.notes ? escHtml(j.notes) : ''].filter(Boolean).join(' · ') + '</td></tr>' : '');
   }
   el.innerHTML = h + '</tbody></table></div></div>';
+}
+
+const JOB_FIELDS = [['shoot_date', 'Data da gravação (AAAA-MM-DD)'], ['shoot_time', 'Horário'],
+  ['address', 'Endereço'], ['onsite_contact', 'Contato no local'], ['delivery_due', 'Entrega (AAAA-MM-DD)'],
+  ['revisions_included', 'Rodadas de revisão'], ['delivery_link', 'Link da entrega'],
+  ['next_event_date', 'Próximo evento do cliente'], ['value', 'Valor']];
+
+function jobEditor(j) {
+  return '<div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+    JOB_FIELDS.map(([k, label]) => '<label style="font-size:12px">' + label +
+      '<input class="input" style="width:100%" id="jf-' + j.id + '-' + k + '" value="' +
+      escHtml(j[k] == null ? '' : String(j[k])) + '"></label>').join('') +
+    '<label style="font-size:12px;grid-column:1/-1">Checklist (um por linha)<textarea class="input" ' +
+      'style="width:100%;min-height:90px" id="jf-' + j.id + '-checklist">' + escHtml(j.checklist || '') +
+      '</textarea></label></div>' +
+    '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="jobSave(\'' + j.id + '\')">Salvar</button>';
+}
+
+function jobEdit(id) {
+  const row = document.getElementById('jobedit-' + id);
+  if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+async function jobSave(id) {
+  const body = {};
+  for (const [k] of [...JOB_FIELDS, ['checklist']]) {
+    const el = document.getElementById('jf-' + id + '-' + k);
+    if (el) body[k] = el.value;
+  }
+  await api('/api/jobs/' + encodeURIComponent(id) + '/update', {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
+  });
+  showToast('Produção salva.', 'success');
+  loadJobs();
 }
 
 async function jobAct(id, action) {
@@ -1546,9 +1596,12 @@ async function jobAct(id, action) {
     if (!d) return;
     body.next_event_date = d;
   }
-  await api('/api/jobs/' + encodeURIComponent(id) + '/' + action, {
+  const res = await api('/api/jobs/' + encodeURIComponent(id) + '/' + action, {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body),
   });
+  if (res && res.over) alert('Passou das ' + res.revisions_included + ' rodadas combinadas. ' +
+    'Deixei um rascunho avisando sobre revisão extra (aprovar em Mensagens/Outbox).');
+  if (res && res.project && res.project.folder) showToast('Pasta do cliente: ' + res.project.folder, 'success');
   loadJobs();
 }
 

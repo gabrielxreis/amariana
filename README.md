@@ -10,8 +10,19 @@
 - **WhatsApp sem risco de ban:** você aprova e envia do seu próprio WhatsApp com um clique; a API oficial da Meta só para quem deu opt-in.
 - **Nada sai sem a sua aprovação.**
 
+## Instalar (macOS / Linux)
+
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate && pip install -e .
+curl -fsSL https://raw.githubusercontent.com/gabrielxreis/amariana/main/install.sh | bash
+```
+
+Depois, no Claude Code: `/amariana onboard`. A skill se atualiza sozinha a cada uso.
+
+Também dá pra fazer o funil inteiro: captar, propor (PDF com sugestão de preço pelo seu histórico), fazer follow-up, fechar, abrir a pasta do cliente para o /ogab editar, lembrar da gravação, contar revisões e pedir depoimento e indicação.
+
+## Comandos
+
+```bash
 mariana onboard        # primeiro uso
 mariana signature      # assinatura
 mariana email-check --send-test

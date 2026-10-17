@@ -368,6 +368,14 @@ class PostJobConfig(BaseModel):
     reengage_days_before_event: int = 45
 
 
+class ProductionConfig(BaseModel):
+    """Client folders for /ogab, proposal follow-up, shoot reminders."""
+    clients_dir: str = ""            # empty = /ogab's pasta_saida, else ~/Documents/Mariana/clientes
+    proposal_followup_days: list[int] = [3, 5]   # 1st follow-up after 3 days, 2nd 5 days later
+    shoot_reminder: bool = True      # alert the day before + client confirmation draft
+    default_revisions: int = 2
+
+
 class HarveyConfig(BaseModel):
     persona: PersonaConfig
     product: ProductConfig
@@ -379,6 +387,7 @@ class HarveyConfig(BaseModel):
     calendar: CalendarConfig = CalendarConfig()
     notify: NotifyConfig = NotifyConfig()
     postjob: PostJobConfig = PostJobConfig()
+    production: ProductionConfig = ProductionConfig()
 
 
 class EnvConfig(BaseModel):

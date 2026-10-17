@@ -481,6 +481,24 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
     """,
+    # ── v14: proposal follow-up, production and revisions (Mariana) ──
+    """
+    ALTER TABLE jobs ADD COLUMN proposal_sent_at TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN followups INTEGER DEFAULT 0;
+    ALTER TABLE jobs ADD COLUMN last_followup_at TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN shoot_date TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN shoot_time TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN address TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN onsite_contact TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN checklist TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN reminder_sent_at TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN delivery_due TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN delivery_link TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN revisions_included INTEGER DEFAULT 2;
+    ALTER TABLE jobs ADD COLUMN revisions_used INTEGER DEFAULT 0;
+    ALTER TABLE jobs ADD COLUMN project_dir TEXT DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN briefing_json TEXT DEFAULT '';
+    """,
 ]
 
 BRAIN_PROVIDERS = ("claude", "codex")
@@ -1156,6 +1174,10 @@ class StateManager:
         "company_name", "contact_name", "segment", "service", "value", "status",
         "proposal_path", "event_date", "delivered_at", "next_event_date",
         "testimonial_requested_at", "reengaged_at", "notes", "conversation_id",
+        "proposal_sent_at", "followups", "last_followup_at", "shoot_date", "shoot_time",
+        "address", "onsite_contact", "checklist", "reminder_sent_at", "delivery_due",
+        "delivery_link", "revisions_included", "revisions_used", "project_dir",
+        "briefing_json",
     })
 
     async def add_job(self, *, prospect_id: str, **fields) -> str:

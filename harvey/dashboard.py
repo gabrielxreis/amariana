@@ -996,7 +996,9 @@ async def make_proposal(conversation_id: str):
         await state.init_db()
         result = await build_proposal(state, Brain(state, config.brain), config, conversation_id)
         return {"success": True, "job_id": result["job_id"],
-                "file": Path(result["path"]).name}
+                "file": Path(result["path"]).name,
+                "suggested_prices": result.get("suggested_prices", []),
+                "price_hints": result.get("price_hints", [])}
     except Exception as e:
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
@@ -1032,14 +1034,33 @@ async def convo_to_job(conversation_id: str, request: Request):
         await state.update_conversation(conversation_id, status="closed", stage="closed_won")
         await state.log_action(action_type="job_won", agent="you",
                                details={"company": prospect.company if prospect else ""})
-        return {"success": True, "job_id": job_id}
+        project = await _start_production(state, job_id)
+        return {"success": True, "job_id": job_id, "project": project}
     except Exception as e:
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
+async def _start_production(state, job_id: str) -> dict:
+    """Production details + client folder for /ogab. Never fails the click."""
+    try:
+        from harvey.brain import Brain
+        from harvey.config import load_config
+        from harvey.production import on_job_won
+        config = load_config()
+        return await on_job_won(state, Brain(state, config.brain), config, job_id)
+    except Exception as e:
+        logger.warning(f"production setup failed: {e}")
+        return {"error": str(e)}
+
+
+JOB_EDITABLE = ("value", "service", "event_date", "next_event_date", "notes", "shoot_date",
+                "shoot_time", "address", "onsite_contact", "delivery_due", "delivery_link",
+                "revisions_included", "checklist")
+
+
 @app.post("/api/jobs/{job_id}/{action}")
 async def job_action(job_id: str, action: str, request: Request):
-    if action not in ("won", "delivered", "lost", "update"):
+    if action not in ("won", "delivered", "lost", "update", "proposal_sent", "revision"):
         return JSONResponse({"success": False, "message": "unknown action"}, status_code=400)
     try:
         payload = {}
@@ -1049,16 +1070,62 @@ async def job_action(job_id: str, action: str, request: Request):
             pass
         state = _state()
         await state.init_db()
-        fields = {k: str(v) for k, v in payload.items()
-                  if k in ("value", "service", "event_date", "next_event_date", "notes")}
-        if action == "delivered":
-            fields["delivered_at"] = payload.get("delivered_at") or datetime.now().date().isoformat()
-        if action != "update":
+        job = await state.get_job(job_id)
+        if not job:
+            return JSONResponse({"success": False, "message": "not found"}, status_code=404)
+        fields = {k: (int(v) if k == "revisions_included" and str(v).isdigit() else str(v))
+                  for k, v in payload.items() if k in JOB_EDITABLE}
+        today = datetime.now().date().isoformat()
+        result: dict = {"success": True}
+        if action == "proposal_sent":
+            fields.update(proposal_sent_at=today, followups=0, last_followup_at="")
+        elif action == "revision":
+            used = int(job.get("revisions_used") or 0) + 1
+            included = int(job.get("revisions_included") or 2)
+            fields["revisions_used"] = used
+            result.update(revisions_used=used, revisions_included=included,
+                          over=used > included)
+            if used > included:
+                await _draft_extra_revision(state, job, used, included)
+        elif action == "delivered":
+            fields["delivered_at"] = payload.get("delivered_at") or today
+            fields["status"] = "delivered"
+        elif action in ("won", "lost"):
             fields["status"] = action
         await state.update_job(job_id, **fields)
-        return {"success": True}
+        if action == "won" and job.get("status") != "won":
+            result["project"] = await _start_production(state, job_id)
+        return result
     except Exception as e:
         return JSONResponse({"success": False, "message": str(e)}, status_code=500)
+
+
+async def _draft_extra_revision(state, job: dict, used: int, included: int):
+    """Past the agreed rounds: alert, and draft a kind note about extra rounds."""
+    try:
+        from harvey.agents.postjob import PostJobAgent
+        from harvey.brain import Brain
+        from harvey.config import load_config, load_env
+        from harvey.notify import notify
+        config, env = load_config(), load_env()
+        await notify(config, env, f"Revisão extra: {job.get('company_name')}",
+                     f"Rodada {used} de {included} combinadas.")
+        prospect = await state.get_prospect(job["prospect_id"]) if job.get("prospect_id") else None
+        if not prospect:
+            return
+        from harvey import market
+        mk = await market.for_prospect(state, prospect, getattr(config.persona, "language", "pt-BR"))
+        agent = PostJobAgent(Brain(state, config.brain), state, config, env)
+        body = await agent._short(
+            f"the agreed {included} revision rounds are done and they asked for round {used}; "
+            "say you're happy to do it, mention extra rounds are charged separately and that "
+            "you'll send the value, or suggest bundling the remaining changes into one round",
+            job, market.language(mk))
+        if body:
+            await agent._draft_to_client(job, prospect, body, "revision",
+                                         "sobre a revisão" if mk == market.BR else "about the revision")
+    except Exception as e:
+        logger.warning(f"extra revision draft failed: {e}")
 
 
 @app.get("/api/proposals/{name}")

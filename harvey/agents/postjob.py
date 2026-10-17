@@ -75,7 +75,128 @@ Return ONLY the message text."""
         text = await self.brain.think(prompt, agent="postjob", task=moment)
         return (text or "").strip().strip('"').replace("—", ",").replace("–", ",")
 
+    # ── proposal follow-up and production reminders ──
+
+    def followup_due(self, job: dict, today: date, last_client_msg: date | None) -> bool:
+        """Proposal sent, no answer since, and the next follow-up day reached."""
+        if job.get("status") != "proposal" or not job.get("proposal_sent_at"):
+            return False
+        days = self.config.production.proposal_followup_days
+        n = int(job.get("followups") or 0)
+        if n >= len(days):
+            return False
+        since = _parse(job.get("last_followup_at") or "") or _parse(job["proposal_sent_at"])
+        sent = _parse(job["proposal_sent_at"])
+        if last_client_msg and sent and last_client_msg >= sent:
+            return False  # they answered after the proposal: a human conversation now
+        return bool(since and today >= since + timedelta(days=days[n]))
+
+    async def _last_client_message(self, job: dict) -> date | None:
+        if not job.get("conversation_id"):
+            return None
+        convo = await self.state.get_conversation(job["conversation_id"])
+        if not convo:
+            return None
+        stamps = [m.timestamp for m in convo.thread if m.sender != "harvey" and m.timestamp]
+        return max(stamps).date() if stamps else None
+
+    async def _draft_to_client(self, job: dict, prospect, body: str, kind: str, subject: str):
+        """On the conversation's channel when it isn't email, else email."""
+        channel = "email"
+        if job.get("conversation_id"):
+            convo = await self.state.get_conversation(job["conversation_id"])
+            channel = (convo.channel if convo else "email") or "email"
+        if channel != "email":
+            last = await self.state.channel_target_for_prospect(prospect.id, channel)
+            target = (last or {}).get("target", "")
+            if target:
+                await self.state.add_channel_item(
+                    channel=channel, target=target, body=body, kind=kind,
+                    prospect_id=prospect.id, company_id=prospect.company_id,
+                    contact_name=job.get("contact_name", ""),
+                    company_name=job.get("company_name", ""),
+                    opted_in=(channel == "whatsapp"),
+                    mode=(self.config.channels.whatsapp.mode if channel == "whatsapp" else "manual"),
+                    conversation_id=job.get("conversation_id", ""),
+                )
+                return channel
+        if prospect.email:
+            await self.state.add_outbox_item(
+                prospect_id=prospect.id, to_email=prospect.email, subject=subject, body=body,
+                kind=kind, status="pending_review", conversation_id=job.get("conversation_id", ""),
+                send_at=datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
+            )
+            return "email"
+        return ""
+
+    async def _short(self, goal: str, job: dict, language: str) -> str:
+        prompt = f"""Write a short message from an audiovisual professional to a client, in
+{"Brazilian Portuguese" if language.startswith("pt") else "American English"}, first person,
+warm, under 50 words, no em dashes, no exclamation marks, no signature, no links.
+Client: {job.get('contact_name')} at {job.get('company_name')}. Project: {job.get('service')}.
+Goal: {goal}
+Return ONLY the message."""
+        text = await self.brain.think(prompt, agent="postjob", task="short")
+        return (text or "").strip().strip('"').replace("\u2014", ",").replace("\u2013", ",")
+
+    async def production_tick(self, today: date | None = None) -> int:
+        """Proposal follow-ups, shoot-eve reminders, delivery alerts."""
+        from harvey.notify import notify
+        today = today or date.today()
+        done = 0
+        for job in await self.state.get_jobs():
+            prospect = await self.state.get_prospect(job["prospect_id"]) if job.get("prospect_id") else None
+            if not prospect or prospect.status == "opted_out":
+                continue
+            mk = await market.for_prospect(self.state, prospect,
+                                           getattr(self.config.persona, "language", "pt-BR"))
+            language = market.language(mk)
+            pt = language.startswith("pt")
+
+            if self.followup_due(job, today, await self._last_client_message(job)):
+                n = int(job.get("followups") or 0)
+                goal = ("a light check-in about the proposal you sent a few days ago; ask if "
+                        "they had a chance to look and if any question came up" if n == 0 else
+                        "a last, gracious check-in about the proposal; offer to adjust the scope "
+                        "or date if that helps; no pressure")
+                body = await self._short(goal, job, language)
+                if body and await self._draft_to_client(
+                        job, prospect, body, "proposal_followup",
+                        "sobre a proposta" if pt else "about the proposal"):
+                    await self.state.update_job(job["id"], followups=n + 1,
+                                                last_followup_at=today.isoformat())
+                    done += 1
+
+            shoot = _parse(job.get("shoot_date", ""))
+            if (self.config.production.shoot_reminder and job.get("status") == "won"
+                    and shoot == today + timedelta(days=1) and not job.get("reminder_sent_at")):
+                details = " | ".join(x for x in (
+                    f"{job.get('shoot_time') or ''}".strip(), job.get("address", ""),
+                    job.get("onsite_contact", "")) if x)
+                checklist = (job.get("checklist") or "").replace("\n", " · ")
+                await notify(self.config, self.env, f"Amanhã: {job.get('company_name')}",
+                             f"{details}\n{checklist}"[:300])
+                body = await self._short(
+                    f"confirm tomorrow's shoot ({job.get('shoot_time') or ''} at "
+                    f"{job.get('address') or 'the location'}) and ask them to confirm the on-site "
+                    "contact", job, language)
+                if body:
+                    await self._draft_to_client(job, prospect, body, "reminder",
+                                                "amanhã" if pt else "tomorrow")
+                await self.state.update_job(job["id"], reminder_sent_at=today.isoformat())
+                done += 1
+
+            due = _parse(job.get("delivery_due", ""))
+            if job.get("status") == "won" and due == today + timedelta(days=1):
+                await notify(self.config, self.env, f"Entrega amanhã: {job.get('company_name')}",
+                             f"{job.get('service')} · pasta: {job.get('project_dir') or '?'}")
+        return done
+
     async def run(self) -> int:
+        try:
+            await self.production_tick()
+        except Exception as e:
+            logger.warning(f"PostJob: production tick failed: {e}")
         if not self.cfg.enabled:
             return 0
         today = date.today()

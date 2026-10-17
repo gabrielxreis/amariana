@@ -184,6 +184,20 @@ async def build_proposal(state, brain, config, conversation_id: str) -> dict:
     briefing = await extract_briefing(brain, thread, prospect, client, services, language)
     if not briefing:
         raise RuntimeError("could not read a briefing from the conversation")
+
+    # Price suggestions from closed jobs (only where the catalog has no price).
+    from harvey import pricing
+    jobs = await state.get_jobs()
+    hints = []
+    for item in briefing.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        hist = pricing.history(jobs, briefing.get("segment", ""), item.get("service", ""))
+        if hist:
+            hints.append(f"{item.get('service')}: {hist['text']}")
+            if not item.get("price"):
+                item["price"] = pricing._fmt(hist["median"], hist["symbol"])
+                item["price_suggested"] = True
     sig = config.persona.signature.model_dump() if hasattr(config.persona, "signature") else {}
     page = render_html(briefing, profile, sig, client, prospect.full_name() or client, language)
 
@@ -201,6 +215,8 @@ async def build_proposal(state, brain, config, conversation_id: str) -> dict:
         value=" + ".join(i.get("price", "") for i in items if i.get("price")),
         event_date=briefing.get("date", ""), proposal_path=str(final),
         conversation_id=conversation_id,
+        briefing_json=json.dumps(briefing, ensure_ascii=False),
+        notes=("Histórico de preço: " + "; ".join(hints)) if hints else "",
     )
     job = await state.job_for_conversation(conversation_id)
     if job:
@@ -210,5 +226,7 @@ async def build_proposal(state, brain, config, conversation_id: str) -> dict:
         job_id = await state.add_job(prospect_id=prospect.id, status="proposal", **fields)
     await state.log_action(action_type="proposal_created", agent="proposal",
                            details={"client": client, "file": final.name})
+    suggested = [i.get("service") for i in items if i.get("price_suggested")]
     return {"job_id": job_id, "path": str(final), "html": str(html_path),
-            "pdf": str(pdf_path) if pdf_path else "", "briefing": briefing}
+            "pdf": str(pdf_path) if pdf_path else "", "briefing": briefing,
+            "price_hints": hints, "suggested_prices": suggested}
