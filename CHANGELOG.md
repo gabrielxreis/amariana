@@ -1,6 +1,7 @@
 # Mudanças da Mariana
 
 ## 0.6.0 (22/10/2026)
+- Removida a automação antiga do LinkedIn (robô de navegador e login por senha no painel e no setup): a Mariana só escreve, você envia
 - Aquecimento: comentário num post do lead antes do convite (`mariana linkedin aquecer`); o convite espera 2 dias
 - Momento certo: vaga de vídeo ou social media, evento anunciado e cargo novo de marketing põem o lead no topo, com a mensagem citando o motivo (`mariana linkedin momento`)
 - Vídeo de oi de 20 s com o Gab para quem aceitou o convite (`mariana linkedin video`)

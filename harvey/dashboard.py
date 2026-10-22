@@ -207,16 +207,6 @@ async def get_setup_status():
         "help": "Rode: mariana onboard (pode mandar um .md sobre você).",
     })
 
-    # 7. LinkedIn (optional)
-    linkedin_email = env_vars.get("LINKEDIN_EMAIL", "") or os.getenv("LINKEDIN_EMAIL", "")
-    linkedin_pass = env_vars.get("LINKEDIN_PASSWORD", "") or os.getenv("LINKEDIN_PASSWORD", "")
-    checks.append({
-        "id": "linkedin", "label": "Login do LinkedIn (não recomendado)",
-        "done": bool(linkedin_email) and bool(linkedin_pass),
-        "required": False,
-        "help": "Opcional e desligado por padrão: automatizar o LinkedIn viola os termos. A Mariana escreve e você envia.",
-    })
-
     # 8. Cloudflare (optional)
     cf_id = env_vars.get("CLOUDFLARE_ACCOUNT_ID", "") or os.getenv("CLOUDFLARE_ACCOUNT_ID", "")
     cf_token = env_vars.get("CLOUDFLARE_API_TOKEN", "") or os.getenv("CLOUDFLARE_API_TOKEN", "")
@@ -256,7 +246,7 @@ async def get_settings():
     """Get current settings — presence flags only for secrets, never raw values."""
     env_vars = _read_env_file()
     all_keys = [
-        "INSTANTLY_API_KEY", "LINKEDIN_EMAIL", "LINKEDIN_PASSWORD",
+        "INSTANTLY_API_KEY",
         "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN",
         "GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET",
         "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
@@ -278,8 +268,6 @@ async def get_settings():
         # Non-secret values echo back so fields repopulate; secrets are
         # presence-only so keys never leave the box.
         "instantly_api_key_set": is_set("INSTANTLY_API_KEY"),
-        "linkedin_email": env_vars.get("LINKEDIN_EMAIL", ""),
-        "linkedin_password_set": is_set("LINKEDIN_PASSWORD"),
         "cloudflare_account_id": env_vars.get("CLOUDFLARE_ACCOUNT_ID", ""),
         "cloudflare_api_token_set": is_set("CLOUDFLARE_API_TOKEN"),
         "gmail_client_id": env_vars.get("GMAIL_CLIENT_ID", ""),
@@ -308,7 +296,7 @@ async def save_env_settings(request: Request):
         return JSONResponse({"success": False, "message": "Invalid request body."}, status_code=400)
     async with _env_lock:
         updates = {}
-        for key in ["INSTANTLY_API_KEY", "LINKEDIN_EMAIL", "LINKEDIN_PASSWORD",
+        for key in ["INSTANTLY_API_KEY",
                      "CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN",
                      "GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET",
                      "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",

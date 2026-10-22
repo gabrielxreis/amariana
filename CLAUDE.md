@@ -72,7 +72,7 @@ Regra de canal por mercado (automática, `harvey/market.py`):
 Tudo cai na aba **Mensagens** do painel. A Mariana escreve; a pessoa aprova, clica em "Abrir no WhatsApp" (abre o WhatsApp dela com o texto pronto) ou "Copiar e abrir perfil" (LinkedIn/Instagram) e envia da própria conta. Nenhuma conta é automatizada, então não há risco de ban.
 - `mariana whatsapp-check` confere a configuração.
 - Modo `cloud_api` (opcional, `channels.whatsapp.mode`): envio automático pela API oficial da Meta, **só** para contatos marcados como opt-in (quem respondeu ou pediu contato). Precisa de `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID` no `.env` (Meta for Developers > WhatsApp > API Setup). Nunca ofereça automação não oficial do WhatsApp Web.
-- O login automatizado no LinkedIn do Mariana fica desligado (`automate_login: false`): ele viola os termos do LinkedIn.
+- A Mariana não tem login no LinkedIn nem robô de navegador: ela escreve, você envia da sua conta (`mariana linkedin fila`).
 
 ### Passo 5b: agenda, avisos e números
 - **Agenda real:** ative a Google Calendar API no mesmo projeto do Gmail e rode `mariana gmail auth` de novo. `mariana agenda-check` mostra os próximos horários livres. Nas respostas a interessados, a Mariana oferece esses horários exatos (ou o link de `product.offer.booking_url`, se `booking_method: calendar_link`). Ajustes em `calendar:` no config (horário de trabalho, dias, duração).

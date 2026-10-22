@@ -38,7 +38,6 @@ from bs4 import BeautifulSoup
 from harvey.brain import Brain
 from harvey.config import MarianaConfig, EnvConfig
 from harvey.integrations.email_finder import find_email
-from harvey.integrations.linkedin import LinkedInAutomation
 from harvey.models.company import Company
 from harvey.models.prospect import Prospect
 from harvey.state import StateManager
@@ -141,10 +140,6 @@ class Scout:
         # the mercy of Serper/Bing flakiness — cheapest, most reliable win
         # available before spending any queries.
         strategies.append(("known_companies", self._prospect_via_known_companies))
-        if (self.config.channels.linkedin.enabled
-                and getattr(self.config.channels.linkedin, "automate_login", False)
-                and self.env.linkedin_email):
-            strategies.append(("linkedin", self._prospect_via_linkedin))
         # Job boards first: hiring is the strongest intent signal, and the
         # strategy self-skips when python-jobspy isn't installed.
         strategies.append(("hiring_boards", self._prospect_via_hiring_boards))
@@ -632,104 +627,6 @@ class Scout:
                     return count
 
         return count
-
-    # ── Strategy 1: LinkedIn ──
-
-    async def _prospect_via_linkedin(self) -> int:
-        """Search LinkedIn for ICP-matching profiles."""
-        logger.info("Scout: buscando no LinkedIn...")
-        linkedin = LinkedInAutomation(
-            self.env.linkedin_email, self.env.linkedin_password
-        )
-
-        try:
-            await linkedin.start()
-            if not await linkedin.login():
-                logger.warning("Scout: login no LinkedIn falhou. Pulando.")
-                return 0
-
-            count = 0
-            for title in self.config.icp.titles:
-                for industry in self.config.icp.industries:
-                    keywords = f"{title} {industry}"
-                    try:
-                        profiles = await linkedin.search_people(
-                            keywords=keywords, max_results=10
-                        )
-                    except Exception as e:
-                        logger.debug(f"LinkedIn search failed for '{keywords}': {e}")
-                        continue
-
-                    for profile in profiles or []:
-                        if not isinstance(profile, dict):
-                            continue
-
-                        first_name = (profile.get("first_name") or "").strip()
-                        last_name = (profile.get("last_name") or "").strip()
-                        p_title = (profile.get("title") or title).strip()
-                        company_name = (profile.get("company") or "").strip()
-                        li_url = (profile.get("linkedin_url") or "").strip()
-
-                        domain = ""
-                        company_id = ""
-                        if company_name:
-                            try:
-                                domain = await self._guess_domain(company_name)
-                            except Exception:
-                                domain = ""
-                            if domain:
-                                company_id = await self._ensure_company(
-                                    name=company_name,
-                                    domain=domain,
-                                    industry=industry,
-                                    source="linkedin_search",
-                                )
-
-                        email = ""
-                        email_status = ""
-                        if domain and first_name and last_name:
-                            email, email_status = await self._resolve_email(
-                                first_name, last_name, domain
-                            )
-
-                        prospect = Prospect(
-                            first_name=first_name,
-                            last_name=last_name,
-                            email=email,
-                            email_status=email_status,
-                            email_verified=(email_status == "verified"),
-                            linkedin_url=li_url,
-                            company=company_name,
-                            company_id=company_id,
-                            title=p_title,
-                            seniority=self._infer_seniority(p_title),
-                            industry=industry,
-                            source="linkedin_search",
-                            source_url=li_url,
-                        )
-
-                        if not prospect.is_valid():
-                            continue
-                        if await self._is_duplicate_prospect(prospect):
-                            continue
-
-                        await self.state.add_prospect(prospect)
-                        self._remember_prospect(prospect)
-                        count += 1
-                        logger.info(
-                            f"Scout: lead adicionado {prospect.full_name()} "
-                            f"da {company_name}"
-                        )
-                        if count >= MAX_PROSPECTS_PER_CYCLE:
-                            return count
-
-            return count
-
-        finally:
-            try:
-                await linkedin.stop()
-            except Exception as e:
-                logger.debug(f"LinkedIn stop failed: {e}")
 
     # ── Strategy 2: Web search → LinkedIn profiles ──
 

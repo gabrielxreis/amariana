@@ -129,11 +129,8 @@ class LinkedInChannelConfig(BaseModel):
     warmup: bool = True                 # comment on a post before inviting
     warmup_days: int = 2                # days between the comment and the invite
     withdraw_after_days: int = 21       # pending invites older than this: withdraw
-    # Mariana drafts LinkedIn connection notes + messages for prospects
-    # abroad and you send them from the dashboard. Automating LinkedIn with
-    # your password (the old scraper) breaks its terms and gets accounts
-    # restricted, so it stays off unless you opt in explicitly.
-    automate_login: bool = False
+    # Mariana drafts LinkedIn invites and messages; the user sends them from
+    # their own account. There is no LinkedIn login or browser robot.
 
 
 class InstagramChannelConfig(BaseModel):
@@ -401,8 +398,6 @@ class EnvConfig(BaseModel):
     dataforseo_login: str = ""
     dataforseo_password: str = ""
     dataforseo_sandbox: str = ""   # any truthy value routes to the free sandbox
-    linkedin_email: str = ""
-    linkedin_password: str = ""
     hunter_api_key: str = ""
     serper_api_key: str = ""
     reoon_api_key: str = ""
@@ -525,8 +520,6 @@ def load_env() -> EnvConfig:
         dataforseo_login=os.getenv("DATAFORSEO_LOGIN", "").strip(),
         dataforseo_password=os.getenv("DATAFORSEO_PASSWORD", "").strip(),
         dataforseo_sandbox=os.getenv("DATAFORSEO_SANDBOX", "").strip(),
-        linkedin_email=os.getenv("LINKEDIN_EMAIL", "").strip(),
-        linkedin_password=os.getenv("LINKEDIN_PASSWORD", "").strip(),
         hunter_api_key=os.getenv("HUNTER_API_KEY", "").strip(),
         serper_api_key=os.getenv("SERPER_API_KEY", "").strip(),
         reoon_api_key=os.getenv("REOON_API_KEY", "").strip(),

@@ -705,7 +705,6 @@ async function loadSettings() {
   document.getElementById('smtp-host').value = data.smtp_host || '';
   document.getElementById('smtp-port').value = data.smtp_port || '';
   document.getElementById('smtp-user').value = data.smtp_username || '';
-  document.getElementById('linkedin-email').value = data.linkedin_email || '';
   document.getElementById('cf-account-id').value = data.cloudflare_account_id || '';
 
   savedPh('gmail-secret', data.gmail_client_secret_set, 'Cole o segredo do cliente');
@@ -714,7 +713,6 @@ async function loadSettings() {
   savedPh('reoon-key', data.reoon_api_key_set, '600 grátis/mês: reoon.com/email-verifier');
   savedPh('zerobounce-key', data.zerobounce_api_key_set, '100 grátis/mês: o melhor para Microsoft 365/Workspace');
   savedPh('hunter-key', data.hunter_api_key_set, '50 grátis/mês + padrão de email');
-  savedPh('linkedin-password', data.linkedin_password_set, 'Senha');
   savedPh('cf-api-token', data.cloudflare_api_token_set, 'Seu API Token do Cloudflare');
 
   // Gmail auth status chip
@@ -770,13 +768,6 @@ async function saveEnv(payload, okMsg) {
 
 function saveInstantly() {
   saveEnv({INSTANTLY_API_KEY: document.getElementById('instantly-key').value.trim()}, 'Chave do Instantly salva.');
-}
-
-function saveLinkedIn() {
-  const payload = {LINKEDIN_EMAIL: document.getElementById('linkedin-email').value.trim()};
-  const pass = document.getElementById('linkedin-password').value;
-  if (pass) payload.LINKEDIN_PASSWORD = pass;
-  saveEnv(payload, 'LinkedIn salvo.');
 }
 
 function saveCloudflare() {

@@ -16,7 +16,7 @@ Você opera a **Mariana**: secretária de IA que fecha trabalhos de filmagem e e
 
 ## Regras fixas
 1. **Nada sai sem aprovação.** Email passa pela Outbox; WhatsApp, LinkedIn e Instagram pela aba Mensagens. Um "pode" não vale para a próxima mensagem.
-2. **Contas são do usuário.** Nunca digitar senha, token ou cartão; OAuth e chaves o próprio usuário faz e cola no `.env`. Nunca automatizar WhatsApp Web nem login do LinkedIn (`automate_login: false` fica). WhatsApp pela API oficial só para quem deu opt-in.
+2. **Contas são do usuário.** Nunca digitar senha, token ou cartão; OAuth e chaves o próprio usuário faz e cola no `.env`. Nunca automatizar WhatsApp Web nem o LinkedIn (não há login nem robô de navegador: o usuário envia da conta dele). WhatsApp pela API oficial só para quem deu opt-in.
 3. **Canal por mercado:** Brasil = email + WhatsApp; exterior = email + LinkedIn (+ Instagram). Toda mensagem no idioma do país da empresa (espanhol no México, inglês nos EUA...). Resposta sempre no idioma de quem escreveu.
 4. **Nada inventado:** cliente, trabalho, preço e prazo só do dossiê (`skills/product_knowledge.md`). Preço sugerido pelo histórico é marcado e o usuário confere antes de enviar.
 5. **Pagamento:** a Mariana nunca cobra nem mexe em pagamento; no máximo prepara o texto.

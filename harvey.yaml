@@ -71,7 +71,6 @@ channels:
     warmup: true                 # comentar num post do lead antes do convite
     warmup_days: 2
     withdraw_after_days: 21      # convites pendentes mais velhos que isso: retirar
-    automate_login: false        # nunca automatizar o LinkedIn com a sua senha
   whatsapp:
     enabled: true
     mode: "link"                 # link (você envia) | cloud_api (só p/ quem deu opt-in)

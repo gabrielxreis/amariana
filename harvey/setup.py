@@ -317,26 +317,9 @@ class SetupWizard:
             self.env_vars["INSTANTLY_API_KEY"] = ""
 
     def _setup_linkedin(self):
-        """Configure LinkedIn credentials."""
-        _print_harvey("Posso buscar no LinkedIn entrando na sua conta por um navegador.")
-        print("\n  ⚠  Atenção: automatizar o LinkedIn viola os termos de uso e pode")
-        print("     restringir ou banir a conta. Não é recomendado: sem isso, eu")
-        print("     escrevo as mensagens e você envia na aba Mensagens.")
-
-        use_linkedin = _ask_yes_no("Configurar o login automático do LinkedIn mesmo assim?", default=False)
-
-        if use_linkedin:
-            email = _ask("Email/usuário do LinkedIn")
-            password = _ask("Senha do LinkedIn (não aparece na tela)", secret=True)
-            self.env_vars["LINKEDIN_EMAIL"] = email
-            self.env_vars["LINKEDIN_PASSWORD"] = password
-
-            _print_harvey("Certo. Fico bem abaixo dos limites, mas o risco com os")
-            _print_harvey("termos do LinkedIn é seu. Ligue automate_login no config.")
-        else:
-            _print_harvey("Ótimo. Eu escrevo as mensagens do LinkedIn e você envia.")
-            self.env_vars["LINKEDIN_EMAIL"] = ""
-            self.env_vars["LINKEDIN_PASSWORD"] = ""
+        """No LinkedIn login: Mariana writes, the user sends from their account."""
+        _print_harvey("No LinkedIn eu escrevo os convites e as mensagens, e você envia")
+        _print_harvey("da sua conta (mariana linkedin fila). Nunca entro na sua conta.")
 
     def _setup_cloudflare(self):
         """Configure Cloudflare Browser Rendering for deep crawling."""
@@ -502,7 +485,7 @@ class SetupWizard:
                     "max_daily_sends": 50,
                 },
                 "linkedin": {
-                    "enabled": bool(self.env_vars.get("LINKEDIN_EMAIL")),
+                    "enabled": True,
                     "max_daily_connections": 20,
                     "max_daily_messages": 10,
                 },
@@ -654,7 +637,6 @@ class SetupWizard:
              else "Claude Code CLI"): (_check_codex_cli() if self.brain_config.provider == "codex"
                                       else _check_claude_cli()),
             "Instantly API": bool(self.env_vars.get("INSTANTLY_API_KEY")),
-            "LinkedIn": bool(self.env_vars.get("LINKEDIN_EMAIL")),
             "Cloudflare": bool(self.env_vars.get("CLOUDFLARE_ACCOUNT_ID")),
             "Trabalho configurado": CONFIG_FILE.exists(),
         }
