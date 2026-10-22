@@ -364,7 +364,10 @@ def cmd_fotos(args):
     from harvey.paths import PROJECT_ROOT
     folder = PROJECT_ROOT / "prompts" / "fotos"
     (PROJECT_ROOT / "data" / "fotos" / "originais").mkdir(parents=True, exist_ok=True)
-    styles = re.split(r"^## ", (folder / "02-estilos.md").read_text(encoding="utf-8"), flags=re.M)[1:]
+    styles_file = folder / f"02-estilos-{'mulher' if args.pessoa == 'woman' else 'homem'}.md"
+    if not styles_file.exists():
+        raise SystemExit(f"  Ainda não há estilos para esse perfil ({styles_file.name}).")
+    styles = re.split(r"^## ", styles_file.read_text(encoding="utf-8"), flags=re.M)[1:]
     if args.estilo is None:
         text = (folder / "01-ficha-personagem.md").read_text(encoding="utf-8")
         label = "ficha de personagem"
@@ -375,13 +378,9 @@ def cmd_fotos(args):
         if not 1 <= args.estilo <= len(styles):
             raise SystemExit(f"  Estilo de 1 a {len(styles)}.")
         style = styles[args.estilo - 1]
-        body = "\n".join(l for l in style.splitlines()[1:] if not l.startswith("Versão feminina"))
-        if args.pessoa == "woman":
-            fem = re.search(r"^Versão feminina da roupa: (.+)$", style, re.M)
-            if fem:
-                body += f"\n\nOutfit: {fem.group(1)}"
+        body = "\n".join(style.splitlines()[1:])
         identity = (folder / "00-identidade.md").read_text(encoding="utf-8").strip()
-        text = f"{identity}\n\n{body.strip()}".replace("{pessoa}", args.pessoa)
+        text = f"{identity}\n\n{body.strip()}"
         label = style.splitlines()[0]
     copied = dossie.copy_to_clipboard(text)
     print(f"\n  Prompt ({label}){' copiado' if copied else ''}. Anexe as fotos reais"
