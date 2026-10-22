@@ -146,7 +146,7 @@ class Harness:
     def entries(self):
         if not self.log.exists():
             return []
-        return [json.loads(line) for line in self.log.read_text().splitlines()]
+        return [json.loads(line) for line in self.log.read_text(encoding="utf-8").splitlines()]
 
     def count(self, key, value):
         return sum(1 for e in self.entries() if e.get(key) == value)
@@ -424,7 +424,7 @@ async def test_no_final_answer_escalates_to_a_human_without_replying(harvey):
 def _load_pre_codex_db(path: Path):
     """A database written by Mariana 0.2.1 (before the Codex provider)."""
     con = sqlite3.connect(path)
-    con.executescript((FIXTURES / "pre_codex_harvey_0_2_1.sql").read_text())
+    con.executescript((FIXTURES / "pre_codex_harvey_0_2_1.sql").read_text(encoding="utf-8"))
     con.close()
 
 

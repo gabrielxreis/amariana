@@ -102,7 +102,7 @@ Return JSON:
         raise RuntimeError("o cérebro não devolveu o perfil; tente de novo")
     data = _clean(data)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    (OUT_DIR / "perfil.json").write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    (OUT_DIR / "perfil.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     path = OUT_DIR / "perfil.md"
     path.write_text(render_profile(data), encoding="utf-8")
     return path

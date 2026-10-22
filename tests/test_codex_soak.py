@@ -78,7 +78,7 @@ def soak(monkeypatch, tmp_path):
             out = []
             for f in files:
                 if f.exists():
-                    out += [json.loads(line) for line in f.read_text().splitlines()]
+                    out += [json.loads(line) for line in f.read_text(encoding="utf-8").splitlines()]
             return out
 
         def pids(self):
@@ -110,7 +110,7 @@ def _alive(pid: int) -> bool:
     except PermissionError:
         return True
     try:
-        with open(f"/proc/{pid}/stat") as f:
+        with open(f"/proc/{pid}/stat", encoding="utf-8") as f:
             return f.read().split()[2] != "Z"
     except OSError:
         return True

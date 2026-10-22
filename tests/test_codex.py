@@ -49,7 +49,7 @@ def _write_login(home: Path, expires_in: float = 86400, refreshed_ago: float = 3
                    "refresh_token": NATIVE_REFRESH, "account_id": "acct-1"},
         "last_refresh": _rfc3339(refreshed_ago),
         **extra,
-    }))
+    }), encoding="utf-8")
     auth.chmod(0o600)
     return auth
 
@@ -94,7 +94,7 @@ def fake(monkeypatch, tmp_path):
         def entries(self):
             if not log_path.exists():
                 return []
-            return [json.loads(line) for line in log_path.read_text().splitlines()]
+            return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
 
         def methods(self):
             return [e["method"] for e in self.entries() if "method" in e]
@@ -103,7 +103,7 @@ def fake(monkeypatch, tmp_path):
             return [e for e in self.entries() if e.get("cmd") == "app-server"]
 
         def sent_prompt(self):
-            return PROMPT in log_path.read_text() if log_path.exists() else False
+            return PROMPT in log_path.read_text(encoding="utf-8") if log_path.exists() else False
 
     return Fake()
 
@@ -217,7 +217,7 @@ async def test_private_runtime_environment(fake, native_home, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_runtime_gets_an_access_only_copy_of_the_login(fake, native_home):
-    native = json.loads((native_home / "auth.json").read_text())
+    native = json.loads((native_home / "auth.json").read_text(encoding="utf-8"))
     await _client(native_home).run(PROMPT, timeout=30)
     snapshot = fake.servers()[1]["auth"]
     assert snapshot == {
@@ -251,7 +251,7 @@ async def test_each_call_reads_the_login_afresh(fake, native_home):
     client = _client(native_home)
     await client.run(PROMPT, timeout=30)
     _write_login(native_home, expires_in=7200)  # e.g. renewed by `codex login`
-    renewed = json.loads((native_home / "auth.json").read_text())["tokens"]["access_token"]
+    renewed = json.loads((native_home / "auth.json").read_text(encoding="utf-8"))["tokens"]["access_token"]
     await client.run(PROMPT, timeout=30)
     assert fake.servers()[-1]["auth"]["tokens"]["access_token"] == renewed
 
@@ -276,12 +276,12 @@ async def test_expired_login_fails_before_anything_runs(fake, native_home, login
 
 def test_login_a_week_old_is_still_used(native_home):
     _write_login(native_home, refreshed_ago=7 * 86400)
-    data = json.loads((native_home / "auth.json").read_text())
+    data = json.loads((native_home / "auth.json").read_text(encoding="utf-8"))
     assert hc.build_access_snapshot(data)["tokens"]["refresh_token"] == ""
 
 
 def test_unreadable_token_expiry_is_an_auth_error(native_home):
-    data = json.loads((native_home / "auth.json").read_text())
+    data = json.loads((native_home / "auth.json").read_text(encoding="utf-8"))
     data["tokens"]["access_token"] = "not-a-jwt"
     with pytest.raises(hc.CodexError) as err:
         hc.build_access_snapshot(data)
@@ -518,7 +518,7 @@ def _alive(pid: int) -> bool:
         return True
     # A reaped-but-zombie child still answers kill(0); check its state.
     try:
-        with open(f"/proc/{pid}/stat") as f:
+        with open(f"/proc/{pid}/stat", encoding="utf-8") as f:
             return f.read().split()[2] != "Z"
     except OSError:
         return True
@@ -739,7 +739,7 @@ def test_group_readable_login_is_refused(native_home):
 
 def test_api_key_login_is_refused(native_home):
     auth = native_home / "auth.json"
-    auth.write_text(json.dumps({"auth_mode": "apikey", "OPENAI_API_KEY": "sk-secret-value"}))
+    auth.write_text(json.dumps({"auth_mode": "apikey", "OPENAI_API_KEY": "sk-secret-value"}), encoding="utf-8")
     with pytest.raises(hc.CodexError) as err:
         hc.check_native_auth(native_home)
     assert "sk-secret-value" not in str(err.value)

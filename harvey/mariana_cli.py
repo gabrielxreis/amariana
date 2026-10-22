@@ -43,7 +43,7 @@ def cmd_signature(args):
         if not provider.is_configured():
             print("\n  Gmail ainda não está conectado: rode 'mariana gmail auth'.")
             return
-        ok, detail = asyncio.run(provider.install_signature(paths["html"].read_text()))
+        ok, detail = asyncio.run(provider.install_signature(paths["html"].read_text(encoding="utf-8")))
         print(f"\n  {'✓' if ok else '✗'} {detail}")
     print()
 
@@ -364,7 +364,7 @@ def cmd_linkedin(args):
                     raise SystemExit("  Rode 'mariana linkedin perfil' antes, ou passe --arquivo.")
                 from harvey.paths import PROJECT_ROOT
                 photo = any((PROJECT_ROOT / "data" / "fotos" / "escolhidas").glob("*"))
-                profile = g.profile_from_proposal(json.loads(data.read_text()), photo)
+                profile = g.profile_from_proposal(json.loads(data.read_text(encoding="utf-8")), photo)
                 source = "proposta da Mariana"
             history = g.save_score(source, g.score(profile, config.icp.industries))
             return g.report(history)

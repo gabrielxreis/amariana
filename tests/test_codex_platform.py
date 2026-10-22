@@ -75,7 +75,7 @@ async def test_real_executable_in_a_path_with_spaces(native_home, tmp_path, monk
     wrapper = bindir / "codex"
     wrapper.write_text(
         "#!/bin/sh\n"
-        f'exec "{sys.executable}" "{FAKE}" ok "{log}" "$@"\n')
+        f'exec "{sys.executable}" "{FAKE}" ok "{log}" "$@"\n', encoding="utf-8")
     wrapper.chmod(0o755)
     monkeypatch.setenv("PATH", f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}")
     assert hc.find_codex() == str(wrapper)

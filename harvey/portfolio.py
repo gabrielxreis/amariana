@@ -52,7 +52,7 @@ def segment_of(*texts: str) -> str:
 
 def load_items(path=ONBOARDING_FILE) -> list[dict]:
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
     items = ((data.get("profile") or {}).get("offer") or {}).get("portfolio_items") or []

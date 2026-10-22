@@ -487,12 +487,12 @@ def profile_from_proposal(d: dict, has_photo: bool) -> dict:
 
 def save_score(source: str, result: dict) -> list[dict]:
     try:
-        history = json.loads(SCORES_FILE.read_text())
+        history = json.loads(SCORES_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         history = []
     history.append({"date": date.today().isoformat(), "source": source, **result})
     SCORES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SCORES_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2))
+    SCORES_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
     return history
 
 

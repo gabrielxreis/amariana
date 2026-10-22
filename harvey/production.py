@@ -42,7 +42,7 @@ def clients_dir(config=None) -> Path:
     if custom:
         return Path(custom).expanduser()
     try:
-        data = json.loads(OGAB_CONFIG.read_text())
+        data = json.loads(OGAB_CONFIG.read_text(encoding="utf-8"))
         if data.get("pasta_saida"):
             return Path(data["pasta_saida"]).expanduser()
     except (OSError, ValueError):

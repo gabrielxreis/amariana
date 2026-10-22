@@ -56,7 +56,7 @@ def get_oauth_token() -> Optional[str]:
     creds_file = claude_config_dir() / ".credentials.json"
     try:
         if creds_file.is_file():
-            token = _token_from_json_blob(creds_file.read_text())
+            token = _token_from_json_blob(creds_file.read_text(encoding="utf-8"))
             if token:
                 return token
     except OSError as e:
@@ -67,7 +67,7 @@ def get_oauth_token() -> Optional[str]:
     if default_creds != creds_file:
         try:
             if default_creds.is_file():
-                token = _token_from_json_blob(default_creds.read_text())
+                token = _token_from_json_blob(default_creds.read_text(encoding="utf-8"))
                 if token:
                     return token
         except OSError:
@@ -83,7 +83,7 @@ def get_oauth_token() -> Optional[str]:
             try:
                 result = subprocess.run(
                     ["security", "find-generic-password", "-s", service, "-w"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5,
                 )
             except (subprocess.TimeoutExpired, OSError) as e:
                 logger.debug(f"Keychain lookup failed for {service}: {e}")
@@ -102,7 +102,7 @@ def _keychain_services() -> list[str]:
     try:
         dump = subprocess.run(
             ["security", "dump-keychain"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
         )
         if dump.returncode == 0:
             for line in dump.stdout.splitlines():

@@ -116,11 +116,11 @@ def test_installed_wheel_runs_codex_without_the_checkout(tmp_path):
     subprocess.run([sys.executable, "-m", "pip", "wheel", "-q", "--no-deps",
                     "--no-build-isolation", "-w", str(dist), str(src)],
                    check=True, cwd=tmp_path, timeout=300)
-    wheel = next(dist.glob("harvey-*.whl"))
+    wheel = next(dist.glob("mariana-*.whl"))
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps",
                     "--target", str(site), str(wheel)], check=True, timeout=300)
     script = tmp_path / "check.py"
-    script.write_text(CHECK)
+    script.write_text(CHECK, encoding="utf-8")
     out = subprocess.run([sys.executable, "-I", str(script), str(site), str(FAKE), str(work)],
                          cwd=work, capture_output=True, text=True, timeout=300)
     assert out.returncode == 0, out.stderr[-2000:]

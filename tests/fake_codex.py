@@ -25,7 +25,7 @@ CATALOG = {"models": [
 
 
 def log(entry):
-    with open(LOG, "a") as f:
+    with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -42,7 +42,7 @@ THREAD_ID = f"thr-{os.getpid()}" if SCENARIO == "smart" else "thr-1"
 
 def read_auth():
     try:
-        with open(AUTH) as f:
+        with open(AUTH, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return None
@@ -70,12 +70,12 @@ SNAPSHOT = read_auth()
 with open(os.path.join(os.environ["CODEX_HOME"], "config.toml"), "rb") as f:
     catalog_path = tomllib.load(f).get("model_catalog_json")
 if catalog_path:
-    with open(catalog_path) as f:
+    with open(catalog_path, encoding="utf-8") as f:
         log({"private_catalog": json.load(f)})
 log({"cmd": "app-server", "pid": os.getpid(), "cwd": os.getcwd(), "argv": ARGS,
      "env_keys": sorted(os.environ), "home": os.environ.get("HOME"),
      "codex_home": os.environ.get("CODEX_HOME"),
-     "config_toml": open(os.path.join(os.environ["CODEX_HOME"], "config.toml")).read(),
+     "config_toml": open(os.path.join(os.environ["CODEX_HOME"], "config.toml"), encoding="utf-8").read(),
      "auth": SNAPSHOT, "auth_is_link": os.path.islink(AUTH),
      "home_mode": os.stat(os.environ["HOME"]).st_mode & 0o777,
      "codex_home_mode": os.stat(os.environ["CODEX_HOME"]).st_mode & 0o777,
@@ -83,20 +83,20 @@ log({"cmd": "app-server", "pid": os.getpid(), "cwd": os.getcwd(), "argv": ARGS,
      "auth_mode_bits": (os.stat(AUTH).st_mode & 0o777) if SNAPSHOT is not None else None})
 if SNAPSHOT is not None and SCENARIO == "refresh_in_place":
     # A token refresh written straight into the login file Codex was given.
-    with open(AUTH, "r+") as f:
+    with open(AUTH, "r+", encoding="utf-8") as f:
         f.seek(0)
         f.write(json.dumps({"tokens": {"access_token": "new", "refresh_token": "rotated"}}))
         f.truncate()
 if SNAPSHOT is not None and SCENARIO == "refresh_atomic":
     # The same refresh written by atomic rename.
-    with open(AUTH + ".tmp", "w") as f:
+    with open(AUTH + ".tmp", "w", encoding="utf-8") as f:
         f.write(json.dumps({"tokens": {"access_token": "new", "refresh_token": "rotated"}}))
     os.replace(AUTH + ".tmp", AUTH)
 
 
 def effective_config():
     features = {line.split(" = ")[0]: False
-                for line in open(os.path.join(os.environ["CODEX_HOME"], "config.toml"))
+                for line in open(os.path.join(os.environ["CODEX_HOME"], "config.toml"), encoding="utf-8")
                 .read().split("[features]\n", 1)[1].splitlines() if " = " in line}
     config = {
         "project_doc_max_bytes": 0, "include_environment_context": False,

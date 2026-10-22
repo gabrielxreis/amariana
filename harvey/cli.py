@@ -657,6 +657,12 @@ def cmd_sending(args):
 
 def main():
     from harvey.paths import PROJECT_ROOT
+    # Windows terminals default to cp1252: accents and ✓ would crash print().
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     project_root = str(PROJECT_ROOT)
 
     parser = argparse.ArgumentParser(

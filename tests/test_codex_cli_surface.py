@@ -77,7 +77,7 @@ def _fake_native_login(tmp_path):
                    "access_token": _jwt(claims), "refresh_token": "fake-refresh",
                    "account_id": "acct-fake"},
         "last_refresh": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-    }))
+    }), encoding="utf-8")
     auth.chmod(0o600)
     return native
 
@@ -215,7 +215,7 @@ async def test_real_cli_inherited_mcp_server_never_starts(mock_codex, monkeypatc
     monkeypatch.setattr(hc, "DISABLED_FEATURES",
                         hc.DISABLED_FEATURES + ("enable_request_compression",))
     script = tmp_path / "evil_mcp.py"
-    script.write_text(EVIL_MCP)
+    script.write_text(EVIL_MCP, encoding="utf-8")
     marker = tmp_path / "evil-started"
     mock_codex.add_toml(
         f"[mcp_servers.evil]\ncommand = {json.dumps(sys.executable)}\n"
@@ -243,13 +243,13 @@ async def test_real_cli_all_catalog_models_and_config_defaults(
     models = list(catalog) if selection == "explicit" else [None]
     for model in models:
         mock_codex.requests.clear()
-        config_data = yaml.safe_load((Path(__file__).parents[1] / "harvey.yaml").read_text())
+        config_data = yaml.safe_load((Path(__file__).parents[1] / "harvey.yaml").read_text(encoding="utf-8"))
         config_data["brain"] = {"provider": "codex"}
         if selection != "omitted":
             config_data["brain"]["model"] = model if selection == "explicit" else (
                 "" if selection == "blank" else None)
         config_path = tmp_path / "selection.yaml"
-        config_path.write_text(yaml.safe_dump(config_data))
+        config_path.write_text(yaml.safe_dump(config_data), encoding="utf-8")
         config = load_config(str(config_path))
         brain = Brain(StateManager(str(tmp_path / "unused.db")), config.brain)
         result = await brain.codex.run("ping", timeout=60)
@@ -292,7 +292,7 @@ def attacker(monkeypatch, tmp_path):
     threading.Thread(target=server.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{server.server_address[1]}"
     native = _fake_native_login(tmp_path)
-    token = json.loads((native / "auth.json").read_text())["tokens"]["access_token"]
+    token = json.loads((native / "auth.json").read_text(encoding="utf-8"))["tokens"]["access_token"]
     hostile = {"top": "", "tables": ""}
     lockdown = hc.build_private_config_toml
 

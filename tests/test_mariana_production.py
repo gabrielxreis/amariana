@@ -111,9 +111,9 @@ async def test_job_won_creates_ogab_folder(tmp_path, monkeypatch):
     out = await production.on_job_won(sm, brain, _config(), job)
 
     folder = tmp_path / "BRAIN" / "Igreja Sao Joao"
-    memory = (folder / "Igreja Sao Joao.md").read_text()
+    memory = (folder / "Igreja Sao Joao.md").read_text(encoding="utf-8")
     assert "## Pedidos diferentes do usuário" in memory and "job fechado pela Mariana" in memory
-    briefing = open(out["briefing"]).read()
+    briefing = open(out["briefing"], encoding="utf-8").read()
     assert "2026-11-12" in briefing and "sem música eletrônica" in briefing
     assert "- [ ] lapela no pastor" in briefing
     saved = await sm.get_job(job)
@@ -121,15 +121,15 @@ async def test_job_won_creates_ogab_folder(tmp_path, monkeypatch):
 
     # a second job for the same client keeps the memory and adds a line
     await production.on_job_won(sm, brain, _config(), job)
-    assert (folder / "Igreja Sao Joao.md").read_text().count("job fechado pela Mariana") == 2
+    assert (folder / "Igreja Sao Joao.md").read_text(encoding="utf-8").count("job fechado pela Mariana") == 2
 
 
 def test_clients_dir_reads_ogab_config(tmp_path, monkeypatch):
     from harvey import production
 
     cfg = tmp_path / "config.json"
-    cfg.write_text('{"pasta_saida": "~/Documents/CLAUDE BRAIN"}')
+    cfg.write_text('{"pasta_saida": "~/Documents/CLAUDE BRAIN"}', encoding="utf-8")
     monkeypatch.setattr(production, "OGAB_CONFIG", cfg)
-    assert str(production.clients_dir()).endswith("Documents/CLAUDE BRAIN")
+    assert production.clients_dir().parts[-2:] == ("Documents", "CLAUDE BRAIN")
     monkeypatch.setattr(production, "OGAB_CONFIG", tmp_path / "missing.json")
     assert production.clients_dir() == production.DEFAULT_CLIENTS_DIR

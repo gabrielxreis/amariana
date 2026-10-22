@@ -15,16 +15,16 @@ def test_merge_replaces_same_source(tmp_path):
     dossie.merge("ChatGPT", "primeira versão", path)
     dossie.merge("Claude", "memória", path)
     dossie.merge("ChatGPT", "segunda versão", path)
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     assert text.count("## Fonte: ChatGPT") == 1
     assert "segunda versão" in text and "primeira versão" not in text
     assert "memória" in text
 
 
 def test_read_claude_memory_strips_frontmatter(tmp_path):
-    (tmp_path / "MEMORY.md").write_text("- [x](x.md)")
-    (tmp_path / "x.md").write_text("---\nname: x\ndescription: Filmmaker no Rio\n---\n\nFaz reels.\n")
-    (tmp_path / "f.md").write_text("---\nname: f\ndescription: regra\nmetadata:\n  type: feedback\n---\nNunca X.\n")
+    (tmp_path / "MEMORY.md").write_text("- [x](x.md)", encoding="utf-8")
+    (tmp_path / "x.md").write_text("---\nname: x\ndescription: Filmmaker no Rio\n---\n\nFaz reels.\n", encoding="utf-8")
+    (tmp_path / "f.md").write_text("---\nname: f\ndescription: regra\nmetadata:\n  type: feedback\n---\nNunca X.\n", encoding="utf-8")
     text = dossie.read_claude_memory(tmp_path)
     assert "### Filmmaker no Rio" in text and "Faz reels." in text
     assert "Nunca X." not in text
@@ -43,7 +43,7 @@ def test_prompt_has_tastes_and_doors():
 @pytest.mark.asyncio
 async def test_profile_is_rendered_without_dashes(tmp_path, monkeypatch):
     knowledge = tmp_path / "pk.md"
-    knowledge.write_text("Ana, filmmaker de igrejas no Rio.")
+    knowledge.write_text("Ana, filmmaker de igrejas no Rio.", encoding="utf-8")
     monkeypatch.setattr(linkedin_kit, "KNOWLEDGE_FILE", knowledge)
     monkeypatch.setattr(linkedin_kit, "SOBRE_FILE", tmp_path / "nada.md")
     monkeypatch.setattr(linkedin_kit, "OUT_DIR", tmp_path / "li")
@@ -56,10 +56,10 @@ async def test_profile_is_rendered_without_dashes(tmp_path, monkeypatch):
         "skills": ["Edição", "DaVinci"], "custom_url": "analima", "missing": ["foto"],
     })
     path = await linkedin_kit.build_profile(brain)
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     assert "Filmmaker , igrejas" in text and "—" not in text
     assert "About EN" in text and "linkedin.com/in/analima" in text and "- foto" in text
-    assert json.loads((tmp_path / "li" / "perfil.json").read_text())["custom_url"] == "analima"
+    assert json.loads((tmp_path / "li" / "perfil.json").read_text(encoding="utf-8"))["custom_url"] == "analima"
 
 
 @pytest.mark.asyncio
@@ -113,7 +113,7 @@ async def test_ficha_writes_sheet_and_feeds_notes(tmp_path, monkeypatch):
         "works": [{"title": "Reel Conferência", "url": "https://vimeo.com/1", "why": "mesmo público"}],
     })
     path = await ficha.build(sm, brain, pid, crawl=False)
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     assert "louvor" in text and "Reel Conferência" in text and "—" not in text
     notes = (await sm.get_prospect(pid)).personalization_notes
     assert notes.startswith("culto jovem às sextas") and ficha.NOTE_TAG in notes
@@ -136,11 +136,11 @@ async def test_remake_brief_and_folder(tmp_path, monkeypatch):
     import harvey.production as production
     monkeypatch.setattr(production, "clients_dir", lambda config=None: tmp_path / "clientes")
     path, leads = await samples.write_briefs(sm, top=3, mode="remake", config=_config())
-    text = open(path).read()
+    text = open(path, encoding="utf-8").read()
     assert path.endswith("-remake.md") and "antes e depois" in text and "--modo remake" in text
     folder = tmp_path / "clientes" / "Studio Fit (amostra)"
     assert leads[0]["folder"] == str(folder)
-    assert "instagram.com/studiofit" in (folder / "briefing-amostra.md").read_text()
+    assert "instagram.com/studiofit" in (folder / "briefing-amostra.md").read_text(encoding="utf-8")
     assert pid
 
 
@@ -282,7 +282,7 @@ async def test_video_brief_and_ready_message(tmp_path, monkeypatch):
     monkeypatch.setattr(production, "clients_dir", lambda config=None: tmp_path / "clientes")
     brain = FakeBrain(text="Oi Leo — vi o studio")
     path, done = await growth.video_briefs(sm, brain, _config())
-    assert len(done) == 1 and "Oi Leo , vi o studio" in path.read_text()
+    assert len(done) == 1 and "Oi Leo , vi o studio" in path.read_text(encoding="utf-8")
     assert (tmp_path / "clientes" / "Studio Fit (oi)" / "briefing-oi.md").exists()
     brain.text = "Valeu por conectar, gravei um vídeo pra você"
     await growth.video_ready(sm, brain, pid, "https://vimeo.com/9")
@@ -308,7 +308,7 @@ async def test_calendar_only_uses_permitted_remakes(tmp_path, monkeypatch):
                                               "piece": "Fit", "text": "Antes — depois", "media": "vídeo"}]})
     path = await growth.build_calendar(sm, brain, weeks=1)
     assert "https://vimeo.com/1" in brain.prompts[-1]
-    assert "Antes e depois" in path.read_text() and "—" not in path.read_text()
+    assert "Antes e depois" in path.read_text(encoding="utf-8") and "—" not in path.read_text(encoding="utf-8")
 
 
 def test_score_before_and_after(tmp_path, monkeypatch):

@@ -64,7 +64,7 @@ def _slug(text: str) -> str:
 
 def load_profile() -> dict:
     try:
-        return json.loads(ONBOARDING_FILE.read_text()).get("profile", {})
+        return json.loads(ONBOARDING_FILE.read_text(encoding="utf-8")).get("profile", {})
     except (OSError, ValueError):
         return {}
 

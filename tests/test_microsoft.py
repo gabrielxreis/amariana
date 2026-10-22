@@ -98,7 +98,7 @@ def message(i, sender="someone@elsewhere.example", body="hello"):
 @pytest.fixture
 def graph(tmp_path, monkeypatch):
     token_file = tmp_path / "m365_token.json"
-    token_file.write_text(json.dumps({"refresh_token": "rt-1", "tenant": "tenant-abc"}))
+    token_file.write_text(json.dumps({"refresh_token": "rt-1", "tenant": "tenant-abc"}), encoding="utf-8")
     monkeypatch.setattr(microsoft, "TOKEN_FILE", token_file)
     return Graph()
 
@@ -117,7 +117,7 @@ async def test_refresh_token_rotates_and_is_saved(graph):
     form = dict(x.split("=", 1) for x in login.content.decode().split("&"))
     assert form["grant_type"] == "refresh_token" and form["refresh_token"] == "rt-1"
     assert "client_secret" not in form  # public client
-    saved = json.loads(microsoft.TOKEN_FILE.read_text())
+    saved = json.loads(microsoft.TOKEN_FILE.read_text(encoding="utf-8"))
     assert saved["refresh_token"] == "rt-2"
     if os.name == "posix":  # Windows has no POSIX mode bits; ACLs apply
         assert microsoft.TOKEN_FILE.stat().st_mode & 0o777 == 0o600

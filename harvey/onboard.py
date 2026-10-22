@@ -397,9 +397,9 @@ def render_knowledge(profile: dict) -> str:
 def write_outputs(profile: dict, answers: dict) -> dict[str, Path]:
     existing = {}
     if LOCAL_CONFIG.exists():
-        existing = yaml.safe_load(LOCAL_CONFIG.read_text()) or {}
+        existing = yaml.safe_load(LOCAL_CONFIG.read_text(encoding="utf-8")) or {}
     elif (PROJECT_ROOT / "harvey.yaml").exists():
-        existing = yaml.safe_load((PROJECT_ROOT / "harvey.yaml").read_text()) or {}
+        existing = yaml.safe_load((PROJECT_ROOT / "harvey.yaml").read_text(encoding="utf-8")) or {}
     config = build_config(profile, existing)
     LOCAL_CONFIG.write_text(
         "# Gerado por `mariana onboard`. Pode editar à mão; rode de novo para atualizar.\n"
@@ -427,7 +427,7 @@ def write_outputs(profile: dict, answers: dict) -> dict[str, Path]:
 def load_previous() -> tuple[dict, dict]:
     if ONBOARDING_FILE.exists():
         try:
-            data = json.loads(ONBOARDING_FILE.read_text())
+            data = json.loads(ONBOARDING_FILE.read_text(encoding="utf-8"))
             return data.get("profile", {}), data.get("answers", {})
         except ValueError:
             pass
@@ -475,7 +475,7 @@ async def run_onboarding(
 
     answers = dict(previous_answers)
     if answers_file:
-        answers.update(json.loads(Path(answers_file).expanduser().read_text()))
+        answers.update(json.loads(Path(answers_file).expanduser().read_text(encoding="utf-8")))
     pending = [(k, q) for k, q in ob.pending_questions(extracted) if k not in answers]
     if pending and interactive:
         print(f"\n  Faltam {len(pending)} perguntas rápidas (Enter pula):\n")

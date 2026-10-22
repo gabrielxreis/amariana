@@ -64,11 +64,11 @@ def test_brain_config_validation():
 def test_load_brain_config(tmp_path):
     path = tmp_path / "harvey.yaml"
     assert load_brain_config(str(path)) == BrainConfig()  # missing file
-    path.write_text(yaml.dump({"persona": "placeholder"}))
+    path.write_text(yaml.dump({"persona": "placeholder"}), encoding="utf-8")
     assert load_brain_config(str(path)).provider == "claude"  # no section
-    path.write_text(yaml.dump({"brain": {"provider": "codex", "model": "gpt-5.5"}}))
+    path.write_text(yaml.dump({"brain": {"provider": "codex", "model": "gpt-5.5"}}), encoding="utf-8")
     assert load_brain_config(str(path)) == BrainConfig(provider="codex", model="gpt-5.5")
-    path.write_text(yaml.dump({"brain": {"provider": "gemini"}}))
+    path.write_text(yaml.dump({"brain": {"provider": "gemini"}}), encoding="utf-8")
     with pytest.raises(ConfigError):  # never silently becomes Claude
         load_brain_config(str(path))
 
@@ -469,12 +469,12 @@ def test_setup_writes_the_selection(tmp_path, monkeypatch):
     monkeypatch.setattr(setup_mod, "CONFIG_FILE", config_file)
     wizard.config = dict(BASE)
     wizard._write_config()
-    assert yaml.safe_load(config_file.read_text())["brain"] == {"provider": "codex", "model": "gpt-5.5"}
+    assert yaml.safe_load(config_file.read_text(encoding="utf-8"))["brain"] == {"provider": "codex", "model": "gpt-5.5"}
 
     # Re-running setup over a trained config updates the selection too.
     wizard.brain_config = BrainConfig()
     wizard._write_config()
-    assert yaml.safe_load(config_file.read_text())["brain"] == {"provider": "claude"}
+    assert yaml.safe_load(config_file.read_text(encoding="utf-8"))["brain"] == {"provider": "claude"}
 
 
 @pytest.mark.asyncio
@@ -590,14 +590,14 @@ def _render_js(func: str, data, helpers=("escHtml", "formatDate")) -> str:
     node = shutil.which("node")
     if not node:
         pytest.skip("node is not installed")
-    source = (Path(dash.__file__).parent / "web" / "app.js").read_text()
+    source = (Path(dash.__file__).parent / "web" / "app.js").read_text(encoding="utf-8")
     funcs = []
     for name in (*helpers, func):
         match = re.search(rf"^function {name}\(.*?^}}\n", source, re.S | re.M)
         assert match, name
         funcs.append(match.group(0))
     script = "\n".join(funcs) + f"\nprocess.stdout.write({func}({json.dumps(data)}));"
-    return subprocess.run([node, "-e", script], capture_output=True, text=True,
+    return subprocess.run([node, "-e", script], capture_output=True, text=True, encoding="utf-8",
                           check=True, timeout=30).stdout
 
 
