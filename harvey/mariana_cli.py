@@ -198,10 +198,13 @@ def cmd_samples(args):
     from harvey.samples import write_briefs
 
     async def go():
-        _, _, state, _ = await _ctx()
-        return await write_briefs(state, top=args.top)
+        config, _, state, _ = await _ctx()
+        return await write_briefs(state, top=args.top, mode=args.modo, config=config)
     path, leads = asyncio.run(go())
     print(f"\n  {len(leads)} lead(s) para amostra. Briefing para o Gab: {path}")
+    for lead in leads:
+        if lead.get("folder"):
+            print(f"    pasta do /ogab: {lead['folder']}")
     print("  No Claude: /ogab <colar o briefing de um lead>\n")
 
 
@@ -210,7 +213,7 @@ def cmd_sample_ready(args):
 
     async def go():
         config, _, state, brain = await _ctx()
-        return await sample_ready(state, brain, config, args.prospect, args.link)
+        return await sample_ready(state, brain, config, args.prospect, args.link, mode=args.modo)
     channel = asyncio.run(go())
     where = "Outbox" if channel == "email" else "Mensagens"
     print(f"\n  Mensagem com a amostra criada ({channel}); aprove na aba {where}.\n")
@@ -269,7 +272,154 @@ def cmd_notify_test(args):
     print("\n  Aviso enviado (Mac + ntfy/Telegram se configurados).\n")
 
 
+def cmd_dossie(args):
+    from harvey import dossie
+
+    if args.claude_memory is not None:
+        folders = [Path(args.claude_memory).expanduser()] if args.claude_memory else dossie.claude_memory_dirs()
+        async def from_memory(text, source):
+            _, _, _, brain = await _ctx()
+            return await dossie.answer_from(brain, text, source)
+        for folder in folders:
+            text = dossie.read_claude_memory(folder)
+            if not text:
+                continue
+            source = f"memória do Claude Code ({folder.parent.name})"
+            print(f"  Lendo {folder} e organizando no formato do dossiê (leva uns minutos)...")
+            organized = asyncio.run(from_memory(text, source))
+            path = dossie.merge(source, organized or text)
+            print(f"  ✓ {source} → {path}"
+                  + ("" if organized else " (sem organizar: o cérebro não respondeu)"))
+        if not folders:
+            print("  Nenhuma memória do Claude Code encontrada nesta máquina.")
+    for f in args.add or []:
+        text = Path(f).expanduser().read_text(encoding="utf-8", errors="replace")
+        path = dossie.merge(args.fonte or Path(f).stem, text)
+        print(f"  ✓ {f} → {path} ({dossie.gaps(text)} campo(s) marcados NÃO SEI)")
+    if not (args.add or args.claude_memory is not None or args.onboard):
+        copied = dossie.copy_to_clipboard(dossie.prompt_text())
+        print(f"\n  Prompt do dossiê: {dossie.PROMPT_FILE}")
+        print("  " + ("Copiado. " if copied else "") + "Cole no ChatGPT (ou no claude.ai) com a memória "
+              "ligada, responda as perguntas e salve a resposta final num .md.")
+        print("  Depois: mariana dossie --add resposta.md --fonte ChatGPT --onboard\n")
+    if args.onboard:
+        from harvey.onboard import run_onboarding
+        from harvey.paths import PROJECT_ROOT
+        answers_path = PROJECT_ROOT / "data" / "respostas.json"
+        answers = str(answers_path) if answers_path.exists() else ""
+        asyncio.run(run_onboarding(files=[str(dossie.SOBRE_FILE)], site=args.site or "",
+                                   answers_file=answers, assume_yes=True))
+
+
+def cmd_linkedin(args):
+    from harvey import linkedin_kit
+
+    async def go():
+        config, _, state, brain = await _ctx()
+        if args.acao == "perfil":
+            return await linkedin_kit.build_profile(brain)
+        if args.acao == "posts":
+            return await linkedin_kit.build_posts(brain, count=args.quantos)
+        if args.aprovar_todas:
+            n = await linkedin_kit.approve_pending(state)
+            print(f"  {n} rascunho(s) do LinkedIn aprovados.")
+        return await linkedin_kit.queue(state, config)
+    result = asyncio.run(go())
+    if isinstance(result, Path):
+        print(f"\n  Pronto: {result}\n")
+        if not args.no_open:
+            webbrowser.open(result.as_uri())
+    else:
+        print(f"\n  {result} mensagem(ns) marcadas como enviadas hoje.\n")
+
+
+def cmd_ficha(args):
+    from harvey import ficha
+
+    async def go():
+        _, _, state, brain = await _ctx()
+        ids = list(args.prospect or [])
+        if not ids:
+            leads = []
+            for status in ("replied", "contacted", "queued"):
+                leads += await state.get_prospects_by_status(status)
+            leads.sort(key=lambda p: (p.status != "replied", -(p.score or 0)))
+            ids = [p.id for p in leads[:args.top]]
+        paths = []
+        for pid in ids:
+            try:
+                paths.append(await ficha.build(state, brain, pid, crawl=not args.sem_site))
+            except (ValueError, RuntimeError) as e:
+                print(f"  ✗ {pid}: {e}")
+        return paths
+    for path in asyncio.run(go()):
+        print(f"  ✓ {path}")
+    print()
+
+
+def cmd_fotos(args):
+    import re
+
+    from harvey import dossie
+    from harvey.paths import PROJECT_ROOT
+    folder = PROJECT_ROOT / "prompts" / "fotos"
+    (PROJECT_ROOT / "data" / "fotos" / "originais").mkdir(parents=True, exist_ok=True)
+    styles = re.split(r"^## ", (folder / "02-estilos.md").read_text(encoding="utf-8"), flags=re.M)[1:]
+    if args.estilo is None:
+        text = (folder / "01-ficha-personagem.md").read_text(encoding="utf-8")
+        label = "ficha de personagem"
+        print("\n  Estilos para depois da ficha:")
+        for s in styles:
+            print(f"    {s.splitlines()[0]}")
+    else:
+        if not 1 <= args.estilo <= len(styles):
+            raise SystemExit(f"  Estilo de 1 a {len(styles)}.")
+        style = styles[args.estilo - 1]
+        body = "\n".join(l for l in style.splitlines()[1:] if not l.startswith("Versão feminina"))
+        if args.pessoa == "woman":
+            fem = re.search(r"^Versão feminina da roupa: (.+)$", style, re.M)
+            if fem:
+                body += f"\n\nOutfit: {fem.group(1)}"
+        identity = (folder / "00-identidade.md").read_text(encoding="utf-8").strip()
+        text = f"{identity}\n\n{body.strip()}".replace("{pessoa}", args.pessoa)
+        label = style.splitlines()[0]
+    copied = dossie.copy_to_clipboard(text)
+    print(f"\n  Prompt ({label}){' copiado' if copied else ''}. Anexe as fotos reais"
+          + (" e a ficha aprovada" if args.estilo else "") + ".\n")
+    if args.mostrar:
+        print(text + "\n")
+
+
 def register(subparsers):
+    sub = subparsers.add_parser("fotos", help="Prompts da ficha de personagem e das fotos de perfil")
+    sub.add_argument("--estilo", type=int, help="número do estilo (sem = ficha de personagem)")
+    sub.add_argument("--pessoa", choices=["man", "woman"], default="man")
+    sub.add_argument("--mostrar", action="store_true", help="imprimir o prompt")
+    sub.set_defaults(func=cmd_fotos)
+
+    sub = subparsers.add_parser("dossie", help="Juntar tudo que o ChatGPT/Claude sabem sobre você")
+    sub.add_argument("--add", action="append", help="Resposta do ChatGPT/claude.ai salva em .md (pode repetir)")
+    sub.add_argument("--fonte", default="", help="Nome da fonte do --add (ex.: ChatGPT)")
+    sub.add_argument("--claude-memory", nargs="?", const="", default=None,
+                     help="Ler a memória do Claude Code (sem pasta = todas desta máquina)")
+    sub.add_argument("--onboard", action="store_true", help="Refazer o dossiê da Mariana com o material")
+    sub.add_argument("--site", default="")
+    sub.set_defaults(func=cmd_dossie)
+
+    sub = subparsers.add_parser("linkedin", help="Perfil otimizado, posts dos trabalhos e fila de envio")
+    sub.add_argument("acao", choices=["perfil", "posts", "fila"])
+    sub.add_argument("--quantos", type=int, default=5, help="posts: quantos")
+    sub.add_argument("--aprovar-todas", action="store_true",
+                     help="fila: aprovar antes todos os rascunhos do LinkedIn")
+    sub.add_argument("--no-open", action="store_true")
+    sub.set_defaults(func=cmd_linkedin)
+
+    sub = subparsers.add_parser("ficha", help="Ficha de conversa: gostos do lead e trabalhos certos")
+    sub.add_argument("--prospect", action="append", help="id do lead (pode repetir)")
+    sub.add_argument("--top", type=int, default=5, help="sem --prospect: os N leads mais quentes")
+    sub.add_argument("--sem-site", action="store_true", help="não ler o site do lead")
+    sub.set_defaults(func=cmd_ficha)
+
     sub = subparsers.add_parser("eventos", help="Radar de eventos: organizadores com evento chegando")
     sub.add_argument("--months", type=int, default=3, help="Janela em meses (padrão 3)")
     sub.add_argument("--max-queries", type=int, default=24, help="Limite de buscas")
@@ -278,11 +428,14 @@ def register(subparsers):
 
     sub = subparsers.add_parser("amostras", help="Briefing de amostras para o Gab (/ogab)")
     sub.add_argument("--top", type=int, default=5)
+    sub.add_argument("--modo", choices=["corte", "remake"], default="corte",
+                     help="remake = refazer um vídeo fraco do lead (antes e depois)")
     sub.set_defaults(func=cmd_samples)
 
     sub = subparsers.add_parser("amostra-pronta", help="Criar a mensagem com a amostra pronta")
     sub.add_argument("--prospect", required=True)
     sub.add_argument("--link", required=True)
+    sub.add_argument("--modo", choices=["corte", "remake"], default="corte")
     sub.set_defaults(func=cmd_sample_ready)
 
     sub = subparsers.add_parser("proposta", help="Gerar proposta (PDF) a partir de uma conversa")

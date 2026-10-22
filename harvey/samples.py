@@ -9,6 +9,14 @@ When the sample is ready (`mariana amostra-pronta --prospect ID --link URL`)
 Mariana drafts the message that carries it, on the lead's channel: WhatsApp
 in Brazil, LinkedIn or Instagram abroad, email otherwise. Approval as always.
 
+Two modes:
+  corte   (default) a 15 s cut from their raw public material
+  remake  "antes e depois": Gab picks ONE weak video the lead already posted
+          (no hook, no captions, flat audio, no motion), says what is weak and
+          redoes it with motion, captions and a hook. Mariana offers it as a
+          free edit, which opens the door to a first job. The brief also goes
+          to a "<Lead> (amostra)" folder where /ogab keeps clients.
+
 The sample uses the lead's own public material and is sent only to them,
 privately, as a spec piece. It is never published.
 """
@@ -36,6 +44,14 @@ CUTS = {
     "musica": "15 s do refrão em 9:16 com legenda da letra",
 }
 DEFAULT_CUT = "Reel 9:16 de 15 s com o melhor trecho do material público, legenda e gancho nos 2 primeiros segundos"
+
+REMAKE = (
+    "Escolher UM vídeo que eles já postaram e que está fraco (sem gancho nos 2 primeiros "
+    "segundos, sem legenda, áudio ruim, corte lento, sem motion, fora do formato 9:16). "
+    "Anotar em 3 linhas o que está fraco. Refazer com o mesmo material: gancho, cortes no "
+    "ritmo, legenda, motion/lettering na marca deles e áudio limpo. Entregar a versão "
+    "nova e um antes e depois lado a lado (até 20 s)"
+)
 
 
 async def _links(state, company_id: str) -> dict[str, str]:
@@ -74,12 +90,15 @@ async def pick_leads(state, top: int = 5) -> list[dict]:
     return picked
 
 
-async def write_briefs(state, top: int = 5) -> tuple[str, list[dict]]:
+async def write_briefs(state, top: int = 5, mode: str = "corte", config=None) -> tuple[str, list[dict]]:
     leads = await pick_leads(state, top)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{date.today().isoformat()}.md"
-    out = [f"# Amostras da semana ({date.today().strftime('%d/%m/%Y')})", "",
-           "Para o Gab (/ogab): um corte curto por lead, com o material público deles.",
+    remake = mode == "remake"
+    path = OUT_DIR / f"{date.today().isoformat()}{'-remake' if remake else ''}.md"
+    intro = ("Para o Gab (/ogab): refazer um vídeo fraco de cada lead (antes e depois), "
+             "para a Mariana oferecer como edição grátis." if remake else
+             "Para o Gab (/ogab): um corte curto por lead, com o material público deles.")
+    out = [f"# Amostras da semana ({date.today().strftime('%d/%m/%Y')})", "", intro,
            "Enviado só para o próprio lead, em particular. Nunca publicar.", ""]
     for n, lead in enumerate(leads, 1):
         p, c = lead["prospect"], lead["company"]
@@ -90,9 +109,13 @@ async def write_briefs(state, top: int = 5) -> tuple[str, list[dict]]:
                 f"- **Segmento:** {seg or 'geral'}  |  **Score:** {p.score}",
                 f"- **Material:** " + " | ".join(lead["links"].values()),
                 f"- **Site:** {c.website or c.domain if c else ''}",
-                f"- **Corte sugerido:** {CUTS.get(seg, DEFAULT_CUT)}",
-                f"- **Quando pronto:** `mariana amostra-pronta --prospect {p.id} --link <link>`",
+                f"- **{'O que fazer' if remake else 'Corte sugerido'}:** "
+                + (REMAKE if remake else CUTS.get(seg, DEFAULT_CUT)),
+                f"- **Quando pronto:** `mariana amostra-pronta --prospect {p.id} --link <link>"
+                + (" --modo remake`" if remake else "`"),
                 ""]
+        if remake:
+            lead["folder"] = _remake_folder(config, name, out[-9:])
     if not leads:
         out.append("Nenhum lead com YouTube ou Instagram no site ainda. Rode `mariana profile` "
                    "com os sinais HAS_YOUTUBE_CHANNEL e INSTAGRAM_PROFILE confirmados.")
@@ -100,7 +123,23 @@ async def write_briefs(state, top: int = 5) -> tuple[str, list[dict]]:
     return str(path), leads
 
 
-async def sample_ready(state, brain, config, prospect_id: str, link: str) -> str:
+def _remake_folder(config, name: str, lines: list[str]):
+    """Brief in the /ogab clients folder, so /ogab opens it knowing the lead."""
+    from harvey.production import clients_dir, ensure_brand_memory, folder_name
+    try:
+        folder = clients_dir(config) / f"{folder_name(name)} (amostra)"
+        folder.mkdir(parents=True, exist_ok=True)
+        ensure_brand_memory(folder, "Lead da Mariana: edição grátis de amostra (antes e depois). "
+                                    "Só para o próprio lead, nunca publicar.")
+        (folder / "briefing-amostra.md").write_text(
+            "\n".join([f"# Amostra: {name}", ""] + lines), encoding="utf-8")
+        return str(folder)
+    except OSError as e:
+        logger.warning(f"amostras: não deu para criar a pasta de {name}: {e}")
+        return ""
+
+
+async def sample_ready(state, brain, config, prospect_id: str, link: str, mode: str = "corte") -> str:
     """Draft the message carrying the finished sample. Returns where it went."""
     from harvey.agents.channels import ChannelsAgent
     prospect = await state.get_prospect(prospect_id)
@@ -110,9 +149,14 @@ async def sample_ready(state, brain, config, prospect_id: str, link: str) -> str
     lang = market.language_name(mk)
     choice = await ChannelsAgent(brain, state, config).choose(prospect)
     channel = choice[0] if choice else "email"
+    what = ("took one video this lead already posted and re-edited it for free (new hook, "
+            "captions, motion, cleaner audio), sharing a before and after. Be respectful: "
+            "never call their video bad, talk about what the new version adds. Offer to do "
+            "the same for their next videos" if mode == "remake" else
+            "made a 15-second sample for this lead using their own public material, to show "
+            "what they could do together")
     prompt = f"""Write a short {channel} message, first person, in {lang}, from an
-audiovisual professional who made a 15-second sample for this lead using their
-own public material, to show what they could do together. Under 60 words, warm,
+audiovisual professional who {what}. Under 60 words, warm,
 no pressure, one question at the end. Include this link exactly once: {link}
 No em dashes, no exclamation marks, no signature.
 

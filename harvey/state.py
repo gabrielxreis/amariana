@@ -825,6 +825,14 @@ class StateManager:
                 row = await cursor.fetchone()
                 return self._prospect_from_row(row) if row else None
 
+    async def update_prospect_notes(self, prospect_id: str, notes: str):
+        async with self._connect() as db:
+            await db.execute(
+                "UPDATE prospects SET personalization_notes = ?, updated_at = ? WHERE id = ?",
+                (notes, _utcnow().isoformat(), prospect_id),
+            )
+            await db.commit()
+
     async def update_prospect_email(
         self, prospect_id: str, email: str, email_status: str
     ):

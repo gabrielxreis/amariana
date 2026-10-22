@@ -31,6 +31,7 @@ python3.12 -m venv .venv && source .venv/bin/activate && pip install -e .
 ### Passo 2: onboarding (OBRIGATÓRIO no primeiro uso)
 Objetivo: saber o máximo possível sobre a pessoa ou a empresa. Tudo o que a Mariana escreve, quem ela procura e o preço que ela cita vêm daqui.
 
+0. Antes de perguntar do zero, puxe o que as IAs da pessoa já sabem: `mariana dossie` (ver o subcomando `dossie` no SKILL.md: memória do Claude Code, ChatGPT ou claude.ai). O resultado vai para `data/sobre.md`.
 1. Peça material: "Você tem algum arquivo falando de você ou da empresa? Pode ser um .md, .txt ou PDF: bio, tabela de preços, portfólio, apresentação. Se não tiver, tudo bem." Se a pessoa colar texto no chat, salve em `data/sobre.md`.
 2. Peça links: site, portfólio/showreel, Instagram, LinkedIn.
 3. Rode a análise e veja o que falta:
