@@ -3,7 +3,7 @@
 ## 0.5.0 (22/10/2026)
 - Dossiê: `mariana dossie` junta o que o ChatGPT, o claude.ai e a memória do Claude Code já sabem sobre você
 - LinkedIn: perfil otimizado pronto para colar (PT e EN), posts dos trabalhos e fila de disparo em lote com limite diário
-- Foto de perfil com IA: ficha de personagem a partir das fotos reais e 9 estilos para escolher (`mariana fotos`)
+- Foto de perfil com IA: ficha de personagem a partir das fotos reais e 10 estilos para escolher (`mariana fotos`)
 - Ficha de conversa por lead: gostos com a fonte, quebra-gelo e os 3 trabalhos certos para mostrar
 - Amostra "antes e depois": o Gab refaz um vídeo fraco do lead e a Mariana oferece a edição grátis
 

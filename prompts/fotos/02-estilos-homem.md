@@ -28,3 +28,6 @@ Close-up black and white fashion portrait of this man, keeping their real age an
 
 ## 9. Silhueta (só para capa ou post, não para foto de perfil)
 Silhouette of this man in a cap and sunglasses looking upwards against a bright background, creating a mysterious and minimalist effect. Keep the real profile outline, body proportions and posture of the reference.
+
+## 10. Sombra diagonal (P&B, só para capa ou post: esconde metade do rosto)
+High-contrast monochrome portrait of the man from the reference, placed on the central vertical axis of the frame, head and upper torso visible. The head sits about two thirds up from the bottom, horizontally centered, on a smooth light-grey background. A sharp shadow cuts the image diagonally, hiding the lower half of the face and the neck, leaving the eyes, eyebrows and upper forehead visible and emphasizing the facial contours. Keep his real hair, eyes and features exactly as in the reference. Skin above the shadow line rendered as a smooth gradient from mid grey to light grey with a matte texture. Black clothing, likely a high collar, merges with the shadow and creates a silhouette effect. Hard lighting from the upper left casting strong, deep black shadows. Eye-level angle, shallow depth of field, post-processing for extra contrast and sharpness.
