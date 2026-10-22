@@ -80,6 +80,53 @@ Would it help if I sent two examples?"
 
 ---
 
+## Vaga recém-publicada (recrutador acabou de postar)
+
+Quando o usuário quer a VAGA (CLT, PJ fixo ou freela longo de editor, filmmaker, videomaker, social media de vídeo) e o recrutador acabou de publicar no LinkedIn. Diferente da prospecção de cliente: aqui o objetivo é virar conversa com quem contrata.
+
+**Não comentar "tenho interesse" no post.** O recrutador recebe dezenas desses e nenhum vira conversa. Quem manda mensagem direta, cedo e específica sai na frente.
+
+Regras:
+- **Rapidez:** mandar no mesmo dia da publicação, de preferência nas primeiras horas, enquanto o recrutador ainda está olhando a vaga.
+- **Candidatar primeiro:** a mensagem REFORÇA a candidatura oficial (Easy Apply, site, formulário), nunca substitui. Se o usuário ainda não se candidatou, a Mariana lembra antes de liberar o rascunho.
+- **Específico:** ligar UMA competência e UM resultado do usuário ao que a vaga pede (ex.: vaga pede Reels e DaVinci: "edito Reels no DaVinci há 6 anos, um deles passou de 2 milhões de views"). Nada de lista de qualidades.
+- **Curta:** 4 a 6 linhas, sem anexo e sem link na primeira mensagem (portfólio só se pedirem, ou no perfil já otimizado).
+- **Sem conexão ainda:** convite com nota curta citando a vaga ("Vi a vaga de editor que você publicou agora; já me candidatei e queria me apresentar."); a mensagem completa vai depois do aceite.
+- **Uma vez só:** sem resposta em 5 a 7 dias, no máximo um lembrete leve; depois, parar.
+- Idioma do país da empresa, como sempre.
+
+Modelo (português):
+
+```
+Olá, {{first_name}}! Tudo bem?
+
+Vi agora a vaga de {{cargo}} que você publicou e me identifiquei com a
+descrição. Trabalho com {{area}} há {{tempo}}, com foco em {{competencia}},
+e já entreguei {{resultado ligado à vaga}}.
+
+Já me candidatei pela plataforma, mas queria reforçar meu interesse por
+aqui e fico à disposição para conversar.
+
+Obrigado pela atenção!
+```
+
+Modelo (inglês, vaga no exterior):
+
+```
+Hi {{first_name}}, hope you're well!
+
+I just saw the {{role}} opening you posted and it matches what I do.
+I've been working in {{area}} for {{time}}, focused on {{skill}}, and
+recently {{result tied to the role}}.
+
+I've already applied through the posting, just wanted to say hi here
+and let you know I'm happy to chat anytime.
+
+Thanks for your time!
+```
+
+Por que funciona: chega quando a vaga ainda está "quente" para o recrutador, soma à candidatura oficial em vez de pular etapa, e mostra encaixe concreto em vez de interesse genérico.
+
 ## Aquecimento (para leads de alto valor)
 
 Antes de contatar um lead importante:

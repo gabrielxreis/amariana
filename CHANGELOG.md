@@ -1,5 +1,8 @@
 # Mudanças da Mariana
 
+## 0.6.1 (22/10/2026)
+- LinkedIn: mensagem para recrutador que acabou de publicar uma vaga (editor, filmmaker, social media), em português e inglês. Manda cedo, reforça a candidatura oficial e liga um resultado seu ao que a vaga pede; nada de "tenho interesse" no post.
+
 ## 0.6.0 (22/10/2026)
 - Removida a automação antiga do LinkedIn (robô de navegador e login por senha no painel e no setup): a Mariana só escreve, você envia
 - Aquecimento: comentário num post do lead antes do convite (`mariana linkedin aquecer`); o convite espera 2 dias
