@@ -67,6 +67,10 @@ channels:
     enabled: true                # rascunhos de convite + mensagem p/ clientes de fora
     max_daily_connections: 20
     max_daily_messages: 10
+    max_weekly_connections: 80   # o LinkedIn restringe acima de ~100 convites por semana
+    warmup: true                 # comentar num post do lead antes do convite
+    warmup_days: 2
+    withdraw_after_days: 21      # convites pendentes mais velhos que isso: retirar
     automate_login: false        # nunca automatizar o LinkedIn com a sua senha
   whatsapp:
     enabled: true

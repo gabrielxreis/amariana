@@ -36,6 +36,29 @@ WORD_LIMITS = {"whatsapp": 70, "linkedin": 90, "instagram": 60}
 EM_DASHES = ("—", "–")
 
 
+OPENERS = ("gatilho", "observacao", "pergunta", "prova_social")
+TRIGGER_TAG = "[momento]"
+
+
+def trigger_of(notes: str) -> str:
+    """The 'why now' line `mariana linkedin momento` left in the lead's notes."""
+    for line in (notes or "").splitlines():
+        if line.startswith(TRIGGER_TAG):
+            return line[len(TRIGGER_TAG):].strip()
+    return ""
+
+
+async def best_openers_hint(state, channel: str) -> str:
+    """Tell the writer which opening style answers best so far (Numbers tab)."""
+    from harvey.metrics import openers
+    rows = [r for r in await openers(state) if r["channel"] == channel and r["sent"] >= 10]
+    if not rows:
+        return ""
+    best = max(rows, key=lambda r: r["reply_rate"])
+    return (f"Até agora, no {channel}, o estilo que mais teve resposta foi "
+            f"{best['opener']} ({best['reply_rate']}% de {best['sent']}). Prefira-o quando couber.")
+
+
 def clean_message(text: str) -> str:
     """Strip what the model sometimes adds anyway: quotes, labels, dashes."""
     text = (text or "").strip().strip('"').strip()
@@ -118,6 +141,8 @@ class ChannelsAgent:
         for status in ("queued", "contacted"):
             candidates += await self.state.get_prospects_by_status(status)
         candidates = [p for p in candidates if p.id not in drafted_any]
+        # Leads with a "why now" (open role, event, new role) go first.
+        candidates.sort(key=lambda p: (not trigger_of(p.personalization_notes), -(p.score or 0)))
         if not candidates:
             return 0
 
@@ -148,6 +173,8 @@ class ChannelsAgent:
                 language=market.language(mk),
                 status="pending_review" if require else "approved",
                 mode=(self.whatsapp.mode if channel == "whatsapp" else "manual"),
+                opener=draft.get("opener", ""),
+                trigger=trigger_of(prospect.personalization_notes),
             )
             if item_id:
                 drafted += 1
@@ -188,6 +215,8 @@ class ChannelsAgent:
             company=company_name or "",
             title=prospect.title or "",
             personalization=prospect.personalization_notes or "",
+            trigger=trigger_of(prospect.personalization_notes) or "nenhum",
+            best_openers=await best_openers_hint(self.state, channel),
             max_words=WORD_LIMITS[channel],
             note_limit=LINKEDIN_NOTE_LIMIT,
         )
@@ -203,7 +232,9 @@ class ChannelsAgent:
         if len(body.split()) > WORD_LIMITS[channel] * 1.5:
             logger.warning(f"Channels: rascunho de {channel} para {company_name} longo demais.")
             return None
-        return {"body": body, "note": note if channel == "linkedin" else ""}
+        opener = str(result.get("opener", "")).strip().lower()
+        return {"body": body, "note": note if channel == "linkedin" else "",
+                "opener": opener if opener in OPENERS else ""}
 
     async def send_approved_whatsapp(self) -> int:
         """Cloud API mode only: send approved WhatsApp drafts of OPTED-IN

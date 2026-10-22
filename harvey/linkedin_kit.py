@@ -11,15 +11,17 @@ terms and gets accounts restricted). Mariana writes, the user pastes or sends:
                                     the user and posted from their account (or
                                     scheduled with a connected official tool)
   fila    the approved LinkedIn drafts of the Mensagens tab, one at a time:
-          copy the text, open the profile, the user sends, Mariana marks it
-          sent; stops at channels.linkedin.max_daily_messages
+          invites first (only after the warm-up, under the daily and weekly
+          caps), then the message of each accepted invite. Copy the text, open
+          the profile, the user sends, Mariana marks it. Warm-up, accepted
+          invites and the rest live in linkedin_growth.py
 """
 
 from __future__ import annotations
 
 import json
 import webbrowser
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from harvey import portfolio
@@ -183,35 +185,106 @@ async def approve_pending(state) -> int:
     return n
 
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _days_since(stamp: str) -> float:
+    try:
+        return (_now() - datetime.fromisoformat(stamp)).total_seconds() / 86400
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def warm_ok(item: dict, cfg) -> bool:
+    """The invite waits `warmup_days` after the user commented on a post.
+    'skip:' means the lead has no recent post: invite right away."""
+    if not cfg.warmup:
+        return True
+    w = item.get("warmed_at") or ""
+    return w.startswith("skip:") or (bool(w) and _days_since(w) >= cfg.warmup_days)
+
+
+async def counts(state) -> dict:
+    """Invites today / this week and messages today, from the queue itself."""
+    week = (_now() - timedelta(days=7)).isoformat()
+    today = _now().date().isoformat()
+    inv_week = inv_today = msg_today = 0
+    for it in await state.get_channel_items("linkedin", limit=5000):
+        sent = it.get("sent_at") or ""
+        if isinstance(sent, datetime):
+            sent = sent.isoformat()
+        if it["status"] == "sent" and it.get("note"):
+            inv_week += sent >= week
+            inv_today += sent[:10] == today
+        msg = it.get("msg_sent_at") or ""
+        if msg[:10] == today or (it["status"] == "sent" and not it.get("note") and sent[:10] == today):
+            msg_today += 1
+    return {"invites_week": inv_week, "invites_today": inv_today, "messages_today": msg_today}
+
+
+async def stale_invites(state, cfg) -> list[dict]:
+    """Invites pending longer than `withdraw_after_days`: withdraw them
+    (too many pending invites is one of the things LinkedIn punishes)."""
+    return [it for it in await state.get_channel_items("linkedin", "sent", limit=5000)
+            if it.get("note") and not it.get("accepted_at") and not it.get("withdrawn_at")
+            and _days_since(str(it.get("sent_at") or "")) >= cfg.withdraw_after_days]
+
+
+def _walk_one(item, text, copy_text, ask, out) -> str:
+    out(f"  {item.get('contact_name') or ''} | {item.get('company_name') or ''}"
+        + (f"  (momento: {item['trigger']})" if item.get("trigger") else ""))
+    out(f"  {item['target']}\n")
+    out("    " + text.replace("\n", "\n    ") + "\n")
+    copy_to_clipboard(copy_text)
+    if item["target"].startswith("http"):
+        webbrowser.open(item["target"])
+    return (ask("  Texto copiado e perfil aberto. Enviou? (Enter = sim, p = pular, s = sair) ") or "").strip().lower()
+
+
 async def queue(state, config, ask=input, out=print) -> int:
-    """Walk the approved LinkedIn messages: copy, open, the user sends."""
-    cap = config.channels.linkedin.max_daily_messages
-    left = cap - await state.count_channel_sent_today("linkedin")
-    items = await state.get_channel_items("linkedin", "approved")
-    if left <= 0:
-        out(f"  Limite de hoje atingido ({cap} mensagens). Volte amanhã.")
-        return 0
-    if not items:
-        out("  Nenhuma mensagem do LinkedIn aprovada. Aprove no painel (aba Mensagens).")
-        return 0
-    out(f"  {len(items)} aprovada(s), {left} cabem hoje. Enter = enviei, p = pular, s = sair.\n")
-    sent = 0
-    for item in items[:left]:
-        text = item["body"]
-        if item.get("note"):
-            text = f"{item['note']}\n\n(depois que aceitar o convite:)\n{item['body']}"
-        out(f"  {item.get('contact_name') or ''} | {item.get('company_name') or ''}")
-        out(f"  {item['target']}\n")
-        out("    " + text.replace("\n", "\n    ") + "\n")
-        copy_to_clipboard(item.get("note") or item["body"])
-        if item["target"].startswith("http"):
-            webbrowser.open(item["target"])
-        answer = (ask("  Texto copiado e perfil aberto. Enviou? ") or "").strip().lower()
+    """Walk the LinkedIn queue: invites (after warm-up, under the daily and
+    weekly caps), then the messages of accepted invites. Copy, open, the
+    user sends, Mariana marks it."""
+    cfg = config.channels.linkedin
+    c = await counts(state)
+    stale = await stale_invites(state, cfg)
+    if stale:
+        out(f"  {len(stale)} convite(s) pendente(s) há mais de {cfg.withdraw_after_days} dias. "
+            "Retire com: mariana linkedin retirar\n")
+    inv_left = max(0, min(cfg.max_daily_connections - c["invites_today"],
+                          cfg.max_weekly_connections - c["invites_week"]))
+    msg_left = max(0, cfg.max_daily_messages - c["messages_today"])
+    approved = await state.get_channel_items("linkedin", "approved", limit=1000)
+    approved.sort(key=lambda it: not it.get("trigger"))
+    invites = [it for it in approved if it.get("note")]
+    ready = [it for it in invites if warm_ok(it, cfg)]
+    waiting = len(invites) - len(ready)
+    direct = [it for it in approved if not it.get("note")]
+    after_accept = [it for it in await state.get_channel_items("linkedin", "sent", limit=5000)
+                    if it.get("note") and it.get("accepted_at") and not it.get("msg_sent_at")]
+    out(f"  Convites: {len(ready)} prontos, {inv_left} cabem hoje "
+        f"({c['invites_week']}/{cfg.max_weekly_connections} na semana)."
+        + (f" {waiting} esperando o aquecimento (mariana linkedin aquecer)." if waiting else ""))
+    out(f"  Mensagens: {len(after_accept) + len(direct)} prontas, {msg_left} cabem hoje.\n")
+    done = 0
+    for item in ready[:inv_left]:
+        answer = _walk_one(item, f"[convite] {item['note']}", item["note"], ask, out)
+        if answer == "s":
+            return done
+        if answer != "p":
+            await state.update_channel_item(item["id"], status="sent", sent_at=_now().isoformat())
+            done += 1
+    for item in (after_accept + direct)[:msg_left]:
+        answer = _walk_one(item, item["body"], item["body"], ask, out)
         if answer == "s":
             break
         if answer == "p":
             continue
-        now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
-        await state.update_channel_item(item["id"], status="sent", sent_at=now)
-        sent += 1
-    return sent
+        now = _now().isoformat()
+        if item.get("note"):
+            await state.update_channel_item(item["id"], msg_sent_at=now)
+        else:
+            await state.update_channel_item(item["id"], status="sent", sent_at=now, msg_sent_at=now)
+        done += 1
+    return done

@@ -499,6 +499,20 @@ MIGRATIONS: list[str] = [
     ALTER TABLE jobs ADD COLUMN project_dir TEXT DEFAULT '';
     ALTER TABLE jobs ADD COLUMN briefing_json TEXT DEFAULT '';
     """,
+    # ── v15: LinkedIn warm-up, accepted invites, opener style, trigger (Mariana) ──
+    """
+    -- warmed_at: the user commented on a post of the lead (invite waits 2 days)
+    -- accepted_at: the lead accepted the invite (opens the "oi" video)
+    -- opener: style of the opening line, for the Numbers tab
+    -- trigger: why now (open role, event, new role), puts the lead first
+    ALTER TABLE channel_outbox ADD COLUMN warmed_at TEXT DEFAULT '';
+    ALTER TABLE channel_outbox ADD COLUMN accepted_at TEXT DEFAULT '';
+    ALTER TABLE channel_outbox ADD COLUMN withdrawn_at TEXT DEFAULT '';
+    -- LinkedIn: status 'sent' = invite sent; the message goes after acceptance
+    ALTER TABLE channel_outbox ADD COLUMN msg_sent_at TEXT DEFAULT '';
+    ALTER TABLE channel_outbox ADD COLUMN opener TEXT DEFAULT '';
+    ALTER TABLE channel_outbox ADD COLUMN trigger TEXT DEFAULT '';
+    """,
 ]
 
 BRAIN_PROVIDERS = ("claude", "codex")
@@ -1046,6 +1060,7 @@ class StateManager:
     _CHANNEL_COLUMNS = frozenset({
         "status", "body", "note", "error", "message_id", "sent_at",
         "opted_in", "mode", "target", "kind", "conversation_id",
+        "warmed_at", "accepted_at", "withdrawn_at", "opener", "trigger", "msg_sent_at",
     })
 
     @staticmethod
@@ -1072,6 +1087,8 @@ class StateManager:
         opted_in: bool = False,
         kind: str = "first",
         conversation_id: str = "",
+        opener: str = "",
+        trigger: str = "",
     ) -> str | None:
         """Queue one draft. None when this (campaign, prospect, channel)
         already has one."""
@@ -1081,11 +1098,11 @@ class StateManager:
                 """INSERT OR IGNORE INTO channel_outbox
                    (id, channel, campaign_id, prospect_id, company_id,
                     contact_name, company_name, target, language, body, note,
-                    status, opted_in, mode, kind, conversation_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    status, opted_in, mode, kind, conversation_id, opener, trigger)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (item_id, channel, campaign_id, prospect_id, company_id,
                  contact_name, company_name, target, language, body, note,
-                 status, int(opted_in), mode, kind, conversation_id),
+                 status, int(opted_in), mode, kind, conversation_id, opener, trigger),
             )
             await db.commit()
             return item_id if cursor.rowcount > 0 else None

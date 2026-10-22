@@ -124,6 +124,11 @@ class LinkedInChannelConfig(BaseModel):
     enabled: bool = True
     max_daily_connections: int = 20
     max_daily_messages: int = 10
+    # LinkedIn restricts accounts above ~100 invites a week: stay under it.
+    max_weekly_connections: int = 80
+    warmup: bool = True                 # comment on a post before inviting
+    warmup_days: int = 2                # days between the comment and the invite
+    withdraw_after_days: int = 21       # pending invites older than this: withdraw
     # Mariana drafts LinkedIn connection notes + messages for prospects
     # abroad and you send them from the dashboard. Automating LinkedIn with
     # your password (the old scraper) breaks its terms and gets accounts

@@ -349,6 +349,28 @@ SIGNAL_CATALOG: list[dict] = [
         "cost_note": "free (site HTML)",
         "confidence_floor": 0.0,
     },
+
+    # ── Timing: the right moment to reach out (Mariana, `mariana linkedin momento`) ──
+    {
+        "code": "EVENT_ANNOUNCED",
+        "label": "Event announced",
+        "description": "They announced an event (conference, launch, show) in the coming months.",
+        "category": "profile",
+        "value_type": "text",
+        "collector": "momento",
+        "cost_note": "1 Serper search per lead",
+        "confidence_floor": 0.0,
+    },
+    {
+        "code": "NEW_ROLE",
+        "label": "New marketing role",
+        "description": "The contact recently started a new marketing or communications role.",
+        "category": "profile",
+        "value_type": "text",
+        "collector": "momento",
+        "cost_note": "1 Serper search per lead",
+        "confidence_floor": 0.0,
+    },
 ]
 
 
@@ -447,6 +469,12 @@ _PT_BR = {
         "A página da empresa no LinkedIn, linkada no site. Usada para falar com decisores "
         "no exterior, onde o LinkedIn é o canal normal de contato comercial.",
         "grátis (página inicial)"),
+    "EVENT_ANNOUNCED": ("Evento anunciado",
+        "Anunciaram um evento (conferência, lançamento, show) nos próximos meses: precisam de vídeo agora.",
+        "1 busca no Serper por lead"),
+    "NEW_ROLE": ("Cargo novo no marketing",
+        "O contato começou há pouco num cargo de marketing ou comunicação: quem chega quer mostrar serviço.",
+        "1 busca no Serper por lead"),
     "CONTACT_FORM_URL": ("Formulário de contato",
         "Um formulário no site. Chega na empresa sem precisar de email, e cerca de metade "
         "dos domínios não deixa verificar email.",

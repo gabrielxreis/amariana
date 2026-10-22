@@ -1,5 +1,15 @@
 # Mudanças da Mariana
 
+## 0.6.0 (22/10/2026)
+- Aquecimento: comentário num post do lead antes do convite (`mariana linkedin aquecer`); o convite espera 2 dias
+- Momento certo: vaga de vídeo ou social media, evento anunciado e cargo novo de marketing põem o lead no topo, com a mensagem citando o motivo (`mariana linkedin momento`)
+- Vídeo de oi de 20 s com o Gab para quem aceitou o convite (`mariana linkedin video`)
+- Pós-job pede também recomendação no LinkedIn, com texto sugerido
+- Calendário de posts: 3 por semana, bastidor, case e antes e depois (só com permissão do cliente)
+- Nota do perfil de 0 a 100, antes e depois (`mariana linkedin nota`)
+- Conta protegida: limite semanal de convites (80), convite só depois do aceite libera a mensagem, aviso para retirar convites com mais de 21 dias
+- Números por estilo de abertura, e a Mariana prefere o que mais responde
+
 ## 0.5.0 (22/10/2026)
 - Dossiê: `mariana dossie` junta o que o ChatGPT, o claude.ai e a memória do Claude Code já sabem sobre você
 - LinkedIn: perfil otimizado pronto para colar (PT e EN), posts dos trabalhos e fila de disparo em lote com limite diário

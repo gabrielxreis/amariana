@@ -1617,6 +1617,18 @@ async function jobAct(id, action) {
 }
 
 // ── Números ──
+function openerTable(rows) {
+  if (!rows || !rows.length) return '';
+  let h = '<div class="card"><h2>Por estilo de abertura</h2><div class="table-card"><table><thead><tr>' +
+    '<th>Estilo</th><th>Enviadas</th><th>Aceitaram o convite</th><th>Responderam</th><th>Taxa</th></tr></thead><tbody>';
+  for (const r of rows) {
+    h += '<tr><td>' + escHtml(r.key) + '</td><td>' + r.sent + '</td><td>' +
+      (r.invites ? r.accepted + ' (' + r.accept_rate + '%)' : '') + '</td><td>' + r.replied +
+      '</td><td><b>' + r.reply_rate + '%</b></td></tr>';
+  }
+  return h + '</tbody></table></div></div>';
+}
+
 async function loadMetrics() {
   const el = document.getElementById('metrics-list');
   const data = await api('/api/metrics');
@@ -1640,6 +1652,7 @@ async function loadMetrics() {
     table('Por mercado', data.by_market, 'Mercado') +
     table('Por canal', data.by_channel, 'Canal') +
     table('Por tipo de cliente', data.by_segment, 'Segmento') +
+    openerTable(data.by_opener) +
     (t.contacted ? '' : '<div class="card">' + emptyState('&#128202;', 'Sem dados ainda',
       'Os números aparecem quando as primeiras mensagens forem enviadas.') + '</div>');
 }

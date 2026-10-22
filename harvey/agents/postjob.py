@@ -62,10 +62,18 @@ class PostJobAgent:
                 "use video too" if moment == "testimonial" else
                 f"their next event is on {job.get('next_event_date')}: offer to cover it, "
                 "reference the previous project in one line, ask if they want to talk")
+        linkedin = (getattr(self.config.persona, "linkedin", "") or "").strip()
+        words, links = 70, "no links"
+        if moment == "testimonial" and linkedin:
+            goal += (f". Also ask, as a favor, for a recommendation on LinkedIn ({linkedin}): "
+                     "include a suggested recommendation of 2 or 3 sentences in quotes, "
+                     "written in the client's voice about this project, that they can adjust "
+                     "and paste")
+            words, links = 130, f"the only link allowed is {linkedin}"
         prompt = f"""Write a short {channel} message from an audiovisual professional to a
 past client, in {market.name_for_code(language)},
-first person, warm and direct, under 70 words, one question at the end. No em
-dashes, no exclamation marks, no signature, no links.
+first person, warm and direct, under {words} words, one question at the end. No em
+dashes, no exclamation marks, no signature, {links}.
 
 Client: {job.get('contact_name')} at {job.get('company_name')}
 Previous project: {job.get('service')} ({job.get('segment')})

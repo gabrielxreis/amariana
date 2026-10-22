@@ -8,8 +8,16 @@ Para quem você está escrevendo:
 - Cargo: {{title}}
 - Empresa: {{company}}
 - Notas da pesquisa: {{personalization}}
+- Momento (por que agora): {{trigger}}
 
 Escreva em {{language}}.
+
+Estilo de abertura: escolha UM e diga qual usou.
+- gatilho: cita o momento (vaga aberta, evento anunciado, cargo novo). Use sempre que houver momento.
+- observacao: algo concreto que você notou no trabalho deles.
+- pergunta: abre direto com uma pergunta sobre o vídeo deles.
+- prova_social: um cliente parecido que você atendeu (só se estiver no dossiê).
+{{best_openers}}
 
 Regras para todo canal:
 - Uma coisa concreta que você notou sobre eles (só das notas da pesquisa) e uma pergunta. Nada além disso.
@@ -24,5 +32,5 @@ Regras por canal:
 - instagram: uma DM com menos de {{max_words}} palavras. Leve, cite algo do perfil ou do conteúdo deles, só das notas.
 
 Devolva SÓ JSON:
-{"message": "...", "note": "..."}
+{"message": "...", "note": "...", "opener": "gatilho|observacao|pergunta|prova_social"}
 ("note" é texto vazio para whatsapp e instagram.)

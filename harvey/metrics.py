@@ -18,6 +18,40 @@ def _rate(replied: int, contacted: int) -> float:
     return round(100.0 * replied / contacted, 1) if contacted else 0.0
 
 
+OPENER_LABEL = {"gatilho": "Momento certo", "observacao": "Observação",
+                "pergunta": "Pergunta direta", "prova_social": "Prova social"}
+
+
+async def openers(state) -> list[dict]:
+    """Per channel and opening style: sent, accepted (LinkedIn invites) and
+    replied. What the writer learns from, and the Numbers tab shows."""
+    import aiosqlite
+
+    async with state._connect() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT c.channel, c.opener, c.note, c.accepted_at, c.prospect_id, p.status, "
+            "(SELECT COUNT(*) FROM conversations v WHERE v.prospect_id = c.prospect_id) AS convos "
+            "FROM channel_outbox c LEFT JOIN prospects p ON p.id = c.prospect_id "
+            "WHERE c.status = 'sent' AND c.kind = 'first' AND c.opener != ''"
+        ) as cur:
+            rows = [dict(r) for r in await cur.fetchall()]
+    agg: dict[tuple, list[int]] = defaultdict(lambda: [0, 0, 0, 0])
+    for r in rows:
+        a = agg[(r["channel"], r["opener"])]
+        a[0] += 1
+        if r["note"]:
+            a[1] += 1
+            a[2] += int(bool(r["accepted_at"]))
+        a[3] += int(r["status"] in ("replied", "meeting", "closed", "won") or r["convos"] > 0)
+    return sorted(
+        ({"channel": ch, "opener": op, "key": f"{ch}: {OPENER_LABEL.get(op, op)}",
+          "sent": v[0], "invites": v[1], "accepted": v[2], "replied": v[3],
+          "accept_rate": _rate(v[2], v[1]), "reply_rate": _rate(v[3], v[0])}
+         for (ch, op), v in agg.items()),
+        key=lambda r: (-r["reply_rate"], -r["sent"]))
+
+
 async def compute(state, default_language: str = "pt-BR") -> dict:
     import aiosqlite
 
@@ -81,4 +115,5 @@ async def compute(state, default_language: str = "pt-BR") -> dict:
         "by_market": table(by["market"]),
         "by_channel": table(by["channel"]),
         "by_segment": table(by["segment"]),
+        "by_opener": await openers(state),
     }

@@ -234,7 +234,8 @@ def test_cost_notes_are_machine_classifiable():
     chip both key off the cost note. A signal that costs credits must not
     read as free — that is how someone accidentally turns on paid collection.
     """
-    paid = {"SERP_RANK", "EMAIL_STATUS", "EMAIL_PATTERN", "FOUND_IN_SERP"}
+    paid = {"SERP_RANK", "EMAIL_STATUS", "EMAIL_PATTERN", "FOUND_IN_SERP",
+            "EVENT_ANNOUNCED", "NEW_ROLE"}
     for sig in SIGNAL_CATALOG:
         free = sig["cost_note"].lower().startswith(("free", "included", "grátis", "incluído"))
         if sig["code"] in paid:

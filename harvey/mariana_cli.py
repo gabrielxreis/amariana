@@ -6,6 +6,7 @@ Kept apart from cli.py so the upstream Mariana commands stay untouched.
 from __future__ import annotations
 
 import asyncio
+import json
 import webbrowser
 from pathlib import Path
 
@@ -312,25 +313,68 @@ def cmd_dossie(args):
 
 
 def cmd_linkedin(args):
+    from harvey import linkedin_growth as g
     from harvey import linkedin_kit
 
     async def go():
-        config, _, state, brain = await _ctx()
-        if args.acao == "perfil":
+        config, env, state, brain = await _ctx()
+        a = args.acao
+        if a == "perfil":
             return await linkedin_kit.build_profile(brain)
-        if args.acao == "posts":
+        if a == "posts":
             return await linkedin_kit.build_posts(brain, count=args.quantos)
-        if args.aprovar_todas:
-            n = await linkedin_kit.approve_pending(state)
-            print(f"  {n} rascunho(s) do LinkedIn aprovados.")
-        return await linkedin_kit.queue(state, config)
+        if a == "calendario":
+            return await g.build_calendar(state, brain, weeks=args.semanas)
+        if a == "fila":
+            if args.aprovar_todas:
+                print(f"  {await linkedin_kit.approve_pending(state)} rascunho(s) do LinkedIn aprovados.")
+            return f"{await linkedin_kit.queue(state, config)} enviada(s) hoje."
+        if a == "aquecer":
+            return f"{await g.warmup(state, brain, config, limit=args.max)} lead(s) aquecidos."
+        if a == "aceitou":
+            return f"{await g.mark_accepted(state)} convite(s) aceitos."
+        if a == "retirar":
+            return f"{await g.withdraw(state, config)} convite(s) retirados."
+        if a == "momento":
+            n = await g.find_moments(state, brain, config, env, max_leads=args.max,
+                                     estimate=args.estimate)
+            return "" if args.estimate else f"{n} lead(s) com momento certo, foram para o topo da fila."
+        if a == "video":
+            path, done = await g.video_briefs(state, brain, config, args.prospect)
+            for d in done:
+                if d["folder"]:
+                    print(f"    pasta do /ogab: {d['folder']}")
+            print(f"  {len(done)} vídeo(s) de oi. No Claude: /ogab <colar o briefing>")
+            return path
+        if a in ("video-pronto", "permissao"):
+            if not (args.prospect and args.link):
+                raise SystemExit("  Use --prospect ID --link URL.")
+            if a == "video-pronto":
+                await g.video_ready(state, brain, args.prospect[0], args.link)
+                return "Mensagem com o vídeo pronta: sai na fila depois do aceite."
+            n = await g.grant_permission(state, args.prospect[0], args.link)
+            return f"Permissão registrada ({n} edição(ões) liberadas para post)."
+        if a == "nota":
+            if args.arquivo:
+                text = Path(args.arquivo).expanduser().read_text(encoding="utf-8", errors="replace")
+                profile, source = await g.extract_profile(brain, text), "perfil atual"
+            else:
+                data = linkedin_kit.OUT_DIR / "perfil.json"
+                if not data.exists():
+                    raise SystemExit("  Rode 'mariana linkedin perfil' antes, ou passe --arquivo.")
+                from harvey.paths import PROJECT_ROOT
+                photo = any((PROJECT_ROOT / "data" / "fotos" / "escolhidas").glob("*"))
+                profile = g.profile_from_proposal(json.loads(data.read_text()), photo)
+                source = "proposta da Mariana"
+            history = g.save_score(source, g.score(profile, config.icp.industries))
+            return g.report(history)
     result = asyncio.run(go())
     if isinstance(result, Path):
         print(f"\n  Pronto: {result}\n")
         if not args.no_open:
             webbrowser.open(result.as_uri())
-    else:
-        print(f"\n  {result} mensagem(ns) marcadas como enviadas hoje.\n")
+    elif result:
+        print(f"\n{result if result.startswith('  ') else '  ' + result}\n")
 
 
 def cmd_ficha(args):
@@ -406,8 +450,16 @@ def register(subparsers):
     sub.set_defaults(func=cmd_dossie)
 
     sub = subparsers.add_parser("linkedin", help="Perfil otimizado, posts dos trabalhos e fila de envio")
-    sub.add_argument("acao", choices=["perfil", "posts", "fila"])
+    sub.add_argument("acao", choices=["perfil", "posts", "fila", "aquecer", "aceitou", "retirar",
+                                      "momento", "video", "video-pronto", "permissao",
+                                      "calendario", "nota"])
     sub.add_argument("--quantos", type=int, default=5, help="posts: quantos")
+    sub.add_argument("--semanas", type=int, default=4, help="calendario: quantas semanas")
+    sub.add_argument("--max", type=int, default=20, help="aquecer/momento: quantos leads")
+    sub.add_argument("--estimate", action="store_true", help="momento: só mostrar o custo")
+    sub.add_argument("--prospect", action="append", help="id do lead")
+    sub.add_argument("--link", default="", help="video-pronto/permissao: link do vídeo")
+    sub.add_argument("--arquivo", default="", help="nota: texto do perfil atual")
     sub.add_argument("--aprovar-todas", action="store_true",
                      help="fila: aprovar antes todos os rascunhos do LinkedIn")
     sub.add_argument("--no-open", action="store_true")

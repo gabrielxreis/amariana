@@ -142,3 +142,201 @@ async def test_remake_brief_and_folder(tmp_path, monkeypatch):
     assert leads[0]["folder"] == str(folder)
     assert "instagram.com/studiofit" in (folder / "briefing-amostra.md").read_text()
     assert pid
+
+
+# ── 0.6.0: warm-up, moment, oi video, calendar, score, account care ──
+
+from datetime import date as _date, datetime as _dt0, timedelta as _td, timezone as _tz
+
+
+class _dt:
+    @staticmethod
+    def utcnow():
+        return _dt0.now(_tz.utc).replace(tzinfo=None)
+
+from harvey import linkedin_growth as growth
+from harvey.agents.channels import trigger_of
+
+
+async def _invite(sm, i=0, **fields):
+    iid = await sm.add_channel_item(channel="linkedin", target=f"https://www.linkedin.com/in/p{i}",
+                                    body=f"msg {i}", note=f"convite {i}", prospect_id=f"p{i}",
+                                    campaign_id=f"c{i}", contact_name=f"P{i}", company_name=f"E{i}")
+    if fields:
+        await sm.update_channel_item(iid, **fields)
+    return iid
+
+
+def _li_config(**li):
+    return _config(channels={"email": {"provider": "smtp"}, "linkedin": li})
+
+
+@pytest.mark.asyncio
+async def test_invite_waits_for_warmup_then_message_after_accept(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    old = (_dt.utcnow() - _td(days=3)).isoformat()
+    cold = await _invite(sm, 0, status="approved")
+    warm = await _invite(sm, 1, status="approved", warmed_at=old)
+    skip = await _invite(sm, 2, status="approved", warmed_at="skip:" + old)
+    monkeypatch.setattr(linkedin_kit.webbrowser, "open", lambda url: None)
+    monkeypatch.setattr(linkedin_kit, "copy_to_clipboard", lambda t: True)
+    cfg = _li_config(warmup_days=2)
+    seen = []
+    sent = await linkedin_kit.queue(sm, cfg, ask=lambda _: "", out=seen.append)
+    assert sent == 2
+    assert (await sm.get_channel_item(cold))["status"] == "approved"
+    assert (await sm.get_channel_item(warm))["status"] == "sent"
+    assert any("esperando o aquecimento" in s for s in seen)
+    # accepted → the message goes in the next pass, the invite is not resent
+    await sm.update_channel_item(warm, accepted_at=_dt.utcnow().isoformat())
+    assert await linkedin_kit.queue(sm, cfg, ask=lambda _: "", out=lambda *a: None) == 1
+    assert (await sm.get_channel_item(warm))["msg_sent_at"]
+    assert not (await sm.get_channel_item(skip))["msg_sent_at"]
+
+
+@pytest.mark.asyncio
+async def test_weekly_cap_and_stale_invites(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    long_ago = (_dt.utcnow() - _td(days=25)).isoformat()
+    for i in range(3):
+        await _invite(sm, i, status="sent", sent_at=(_dt.utcnow() - _td(days=2)).isoformat())
+    await _invite(sm, 9, status="sent", sent_at=long_ago)
+    await _invite(sm, 10, status="approved", warmed_at="skip:x")
+    cfg = _li_config(max_weekly_connections=3, withdraw_after_days=21)
+    seen = []
+    assert await linkedin_kit.queue(sm, cfg, ask=lambda _: "", out=seen.append) == 0
+    assert any("retirar" in s for s in seen)
+    assert len(await linkedin_kit.stale_invites(sm, cfg.channels.linkedin)) == 1
+    monkeypatch.setattr("webbrowser.open", lambda url: None)
+    assert await growth.withdraw(sm, cfg, ask=lambda _: "", out=lambda *a: None) == 1
+    assert not await linkedin_kit.stale_invites(sm, cfg.channels.linkedin)
+
+
+@pytest.mark.asyncio
+async def test_warmup_writes_comment_and_marks(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    a = await _invite(sm, 0)
+    b = await _invite(sm, 1)
+    monkeypatch.setattr("webbrowser.open", lambda url: None)
+    copied = []
+    monkeypatch.setattr(growth, "copy_to_clipboard", copied.append)
+    brain = FakeBrain(json_result={"comments": ["Que montagem — linda", "Outra"]})
+    answers = iter(["Post sobre o culto de jovens", "1", "", ""])
+    n = await growth.warmup(sm, brain, _li_config(), ask=lambda _: next(answers), out=lambda *x: None)
+    assert n == 1 and copied == ["Que montagem , linda"]
+    assert (await sm.get_channel_item(a))["warmed_at"]
+    assert (await sm.get_channel_item(b))["warmed_at"].startswith("skip:")
+    assert growth.activity_url("https://www.linkedin.com/in/ana/") == \
+        "https://www.linkedin.com/in/ana/recent-activity/all/"
+
+
+@pytest.mark.asyncio
+async def test_moments_put_trigger_in_notes(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    cid = await sm.add_company(Company(name="Igreja Vida", domain="vida.org"))
+    pid = await sm.add_prospect(Prospect(company_id=cid, first_name="Bia", last_name="Souza",
+                                         title="Pastora", company="Igreja Vida", status="queued",
+                                         personalization_notes="culto jovem"))
+
+    class FakeResp:
+        def raise_for_status(self): pass
+        def json(self): return {"organic": [{"title": "Vaga social media Igreja Vida", "link": "https://x/vaga"}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): pass
+        async def post(self, *a, **k): return FakeResp()
+
+    monkeypatch.setattr(growth.httpx, "AsyncClient", FakeClient)
+    brain = FakeBrain(json_result={"moments": [
+        {"type": "hiring", "summary": "Vaga aberta de social media", "url": "https://x/vaga"},
+        {"type": "invented", "summary": "nada"}]})
+    env = type("E", (), {"serper_api_key": "k"})()
+    n = await growth.find_moments(sm, brain, _config(), env, out=lambda *a: None)
+    assert n == 1
+    notes = (await sm.get_prospect(pid)).personalization_notes
+    assert notes.startswith("culto jovem") and trigger_of(notes) == "Vaga aberta de social media"
+    rows = await sm.get_observations(company_id=cid, signal_code="HIRING_ROLE")
+    assert rows and rows[0]["evidence_url"] == "https://x/vaga"
+
+
+def test_moment_queries_cover_three_triggers():
+    kinds = [k for k, _ in growth.moment_queries("Igreja Vida", "Bia Souza")]
+    assert kinds == ["hiring", "event", "new_role"]
+    assert [k for k, _ in growth.moment_queries("Igreja Vida", " ")] == ["hiring", "event"]
+
+
+@pytest.mark.asyncio
+async def test_video_brief_and_ready_message(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    cid = await sm.add_company(Company(name="Studio Fit", domain="fit.com"))
+    pid = await sm.add_prospect(Prospect(company_id=cid, first_name="Leo", last_name="Reis",
+                                         title="Dono", company="Studio Fit"))
+    iid = await sm.add_channel_item(channel="linkedin", target="https://www.linkedin.com/in/leo",
+                                    body="msg", note="convite", prospect_id=pid, campaign_id="c",
+                                    company_name="Studio Fit", contact_name="Leo Reis")
+    await sm.update_channel_item(iid, status="sent", accepted_at=_dt.utcnow().isoformat())
+    monkeypatch.setattr(growth, "VIDEO_DIR", tmp_path / "videos")
+    import harvey.production as production
+    monkeypatch.setattr(production, "clients_dir", lambda config=None: tmp_path / "clientes")
+    brain = FakeBrain(text="Oi Leo — vi o studio")
+    path, done = await growth.video_briefs(sm, brain, _config())
+    assert len(done) == 1 and "Oi Leo , vi o studio" in path.read_text()
+    assert (tmp_path / "clientes" / "Studio Fit (oi)" / "briefing-oi.md").exists()
+    brain.text = "Valeu por conectar, gravei um vídeo pra você"
+    await growth.video_ready(sm, brain, pid, "https://vimeo.com/9")
+    assert "https://vimeo.com/9" in (await sm.get_channel_item(iid))["body"]
+
+
+def test_schedule_rotates_three_kinds_mon_wed_fri():
+    slots = growth.schedule(2, start=_date(2026, 10, 22))
+    assert [d.weekday() for d, _ in slots] == [0, 2, 4, 0, 2, 4]
+    assert {k for _, k in slots[:3]} == set(growth.KINDS)
+    assert slots[0][0] == _date(2026, 10, 26)
+
+
+@pytest.mark.asyncio
+async def test_calendar_only_uses_permitted_remakes(tmp_path, monkeypatch):
+    sm = await _db(tmp_path)
+    pid = await sm.add_prospect(Prospect(first_name="Leo", last_name="R", title="Dono", company="Fit"))
+    await growth.grant_permission(sm, pid, "https://vimeo.com/1")
+    monkeypatch.setattr(growth, "OUT_DIR", tmp_path / "li")
+    monkeypatch.setattr(growth, "_material", lambda: "")
+    monkeypatch.setattr(portfolio, "load_items", lambda *a, **k: [])
+    brain = FakeBrain(json_result={"posts": [{"date": "2026-10-26", "kind": "antes_depois",
+                                              "piece": "Fit", "text": "Antes — depois", "media": "vídeo"}]})
+    path = await growth.build_calendar(sm, brain, weeks=1)
+    assert "https://vimeo.com/1" in brain.prompts[-1]
+    assert "Antes e depois" in path.read_text() and "—" not in path.read_text()
+
+
+def test_score_before_and_after(tmp_path, monkeypatch):
+    monkeypatch.setattr(growth, "SCORES_FILE", tmp_path / "notas.json")
+    weak = growth.score({"headline": "Gabriel", "about": "", "has_photo": True})
+    strong = growth.score({
+        "headline": "Filmmaker e editor de vídeo para igrejas e eventos | Reels, cultos e conferências",
+        "about": "Filmmaker: edição de vídeo e filmagem " * 50 + " 120 projetos. Fale comigo pelo email.",
+        "has_photo": True, "has_banner": True, "featured_count": 4,
+        "experience": [{"has_description": True}] * 3, "skills_count": 15,
+        "custom_url": "gabrielxreis", "services": ["Filmagem"], "recommendations_count": 3,
+    }, audience=["Igrejas"])
+    assert strong["total"] == 100 and weak["total"] < 30
+    assert growth.score({"custom_url": "joao-silva-3a9b2c1d"})["parts"]["url"] == 0
+    growth.save_score("perfil atual", weak)
+    text = growth.report(growth.save_score("proposta", strong))
+    assert "Antes:" in text and "100" in text
+
+
+@pytest.mark.asyncio
+async def test_openers_metrics(tmp_path):
+    from harvey.metrics import openers
+    sm = await _db(tmp_path)
+    pid = await sm.add_prospect(Prospect(first_name="A", last_name="B", title="C", company="D",
+                                         status="replied"))
+    a = await sm.add_channel_item(channel="linkedin", target="u", body="x", note="n",
+                                  prospect_id=pid, campaign_id="c1", opener="gatilho")
+    await sm.update_channel_item(a, status="sent", accepted_at="2026-10-01")
+    rows = await openers(sm)
+    assert rows[0]["opener"] == "gatilho" and rows[0]["accept_rate"] == 100.0
+    assert rows[0]["reply_rate"] == 100.0
